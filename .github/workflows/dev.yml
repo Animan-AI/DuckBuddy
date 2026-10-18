@@ -16,7 +16,7 @@
 # fails on the board is a five-minute discovery, not a fleet incident.
 name: dev
 
-# Microduck Life: Pollen's release pipeline, kept as it is upstream (tests and board-test.sh read it)
+# DuckBuddy: Pollen's release pipeline, kept as it is upstream (tests and board-test.sh read it)
 # but run by hand only - it signs with Pollen's keys and publishes to their update channel.
 on:
   workflow_dispatch:
