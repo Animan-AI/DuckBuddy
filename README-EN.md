@@ -23,13 +23,11 @@ phone or the cloud.
 
 ## What makes DuckBuddy special?
 
-| | | What it does today |
-|---|---|---|
-| 🦆 | **Motion** | Reinforcement-learning policies retrained for our Feetech HL-2915 servos: walking, getting up after a fall, sitting down and standing up, a forward roll (trained in sim). A 50 Hz loop that guards against falls, heat, a flat battery and a lost link |
-| 👂 | **Hearing** | Offline speech recognition (SenseVoice) with denoising and voice detection; two microphones in the head tell which side a voice came from, so it turns to look when you call it |
-| 👀 | **Vision** | Notices faces and things that move and turns to look, naturally (being tested on the robot); joins Wi-Fi from a QR code; "what is this?" answered by a multimodal model when online |
-| 🧭 | **Autonomy** | A mission layer: say a string of moves ("two steps forward, turn around, sit down") and it plans and does them in turn; walking a spoken route is being tested on the robot |
-| 💗 | **A life layer** | Drives and moods; it tires, rests and keeps its servos cool (a hot head moves less); it answers in duck-speak rather than a text-to-speech voice; its name and character live in one persona file — swap it and you have a different duck |
+- 🦆 **Motion** — Reinforcement-learning policies retrained for our Feetech HL-2915 servos: walking, getting up after a fall, sitting down and standing up, a forward roll (trained in sim). A 50 Hz loop that guards against falls, heat, a flat battery and a lost link
+- 👂 **Hearing** — Offline speech recognition (SenseVoice) with denoising and voice detection; two microphones in the head tell which side a voice came from, so it turns to look when you call it
+- 👀 **Vision** — Notices faces and things that move and turns to look, naturally (being tested on the robot); joins Wi-Fi from a QR code; "what is this?" answered by a multimodal model when online
+- 🧭 **Autonomy** — A mission layer: say a string of moves ("two steps forward, turn around, sit down") and it plans and does them in turn; walking a spoken route is being tested on the robot
+- 💗 **A life layer** — Drives and moods; it tires, rests and keeps its servos cool (a hot head moves less); it answers in duck-speak rather than a text-to-speech voice; its name and character live in one persona file — swap it and you have a different duck
 
 ## Architecture
 
