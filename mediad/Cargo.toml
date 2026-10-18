@@ -1,0 +1,72 @@
+[package]
+name = "mediad"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Camera, mic, WebRTC — and the remote gateway"
+
+# GStreamer is Linux-only here, the way `padd`'s evdev tap is. The daemon runs on the robot; the
+# route table, the session pipe and the upstream pool are portable and their tests run on a laptop.
+# Gating by target rather than by feature keeps `cargo test` honest on both — a feature that is off
+# by default is a module nobody compiles.
+#
+# This is the second C dependency to reach the board, after libudev for `gilrs` in `padd`, and it is
+# much larger: `scripts/cross-sysroot.sh` exists for it. `ci-cross-deps.sh` says of the first that
+# it "is the cost of that one exception, and it is worth reading before adding another" — this is
+# that other, and the cost is a sysroot the whole workspace now builds against.
+
+[dependencies]
+duck-ipc-proto = { path = "../duck-ipc-proto" }
+# `[media]` and `[detect]` in /etc/robot/robotd.toml — what this daemon streams, and what it looks
+# for. The same crate `robotd` parses that file with and the same one `robotctl configure` edits it
+# through, so the schema, the defaults and the editor cannot drift from what is read here.
+robotd-params = { path = "../robotd-params" }
+anyhow = "1"
+# The detector itself: the letterbox+turn, the NPU binding, the ONNX fallback and the decoder.
+duck-detect = { path = "../duck-detect" }
+# The console's one route. Already in `Cargo.lock` — `updater` uses it for its test mirror — so it
+# is known-good against this toolchain and the cross build. The alternative was a hand-rolled
+# HTTP/1.1 responder: about sixty lines of hand-written request parsing bound to 0.0.0.0, written to
+# avoid a dependency the build already resolves, where `hyper` underneath this is the most-read
+# implementation of that parser in the language. `webrtc-console.md` §1.1.
+#
+# Default features off: this serves one file over GET, and JSON extractors, multipart, forms and
+# tracing middleware are all weight for routes that do not exist.
+axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio"] }
+clap = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "net", "io-util", "sync", "time", "macros"] }
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+# The pipeline, and the only part of this crate that is not portable.
+#
+# `gstreamer-webrtc` is here for the data channel: a `GstWebRTCDataChannel` is what
+# `create-data-channel` returns, and reaching for untyped `glib::Object` calls to avoid one
+# dependency would be a poor trade.
+[target.'cfg(target_os = "linux")'.dependencies]
+# `v1_22` on both, which is not a guess: it is the floor `gst-plugins-rs`'s own webrtc crate
+# declares, and it is what gates `WebRTCDataChannel` into existence (that type needs `v1_18`).
+# The board runs 1.26.2, so this is comfortably satisfied — and pinning the floor at what the
+# plugin requires rather than at what the board happens to have means a build failure here would
+# name a real incompatibility rather than an accident of one robot's package versions.
+gstreamer = { version = "0.24", features = ["v1_22"] }
+# `appsink`, for the raw NV12 branch off the tee — perception and `get_frame` both want pixels,
+# and taking them off the encoded branch would mean decoding what was just encoded.
+gstreamer-app = { version = "0.24", features = ["v1_22"] }
+gstreamer-webrtc = { version = "0.24", features = ["v1_22"] }
+# `GstVideoMeta`, which the camera source has to advertise in the ALLOCATION query or v4l2src
+# copies every frame — see `advertise_video_meta`. Typed, so the meta API type comes from the
+# bindings rather than a hand-written GType lookup.
+gstreamer-video = { version = "0.24", features = ["v1_22"] }
+glib = "0.21"
+
+[dev-dependencies]
+# `[media]` from a real file on disk, which is how `config::load`'s fall-back-to-defaults rule is
+# tested without a board.
+# `every_call()`, so this crate's exhaustive-match tests use the same list every other
+# transport's do rather than growing a third copy of it.
+duck-ipc-proto = { path = "../duck-ipc-proto", features = ["test-support"] }
+# Fake daemons on real unix sockets, which is how the pipe is tested without a WebRTC peer.
+tempfile = "3"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

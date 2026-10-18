@@ -1,0 +1,14 @@
+[Unit]
+Description=duckweb (dev): a phone page for what Xiaobai hears, says and means, :8088 on the local network
+After=lifed-dev.service
+
+[Service]
+ExecStart=/usr/bin/python3 %h/duckweb/duckweb.py
+WorkingDirectory=%h/duckweb
+StandardOutput=append:%h/robot/recs/duckweb-service.log
+StandardError=append:%h/robot/recs/duckweb-service.log
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,18 @@
+# ~/.config/systemd/user/duckbrain.service on the V100 box (meng, linger on): Xiaobai's online brain,
+# tools/duckbrain/server.py, on 127.0.0.1:8210 only. CosyVoice3 runs on the 4080S alone (by UUID, as
+# ~/ai4robot/gpu.env names it) — the V100s are the user's vLLM / anima.
+[Unit]
+Description=duckbrain: Xiaobai's online brain (local 27B + CosyVoice3 duck voice on the 4080S), 127.0.0.1:8210
+
+[Service]
+WorkingDirectory=/data/microduck/tts
+Environment=PYTHONPATH=~/CosyVoice:~/CosyVoice/third_party/Matcha-TTS
+Environment=CUDA_DEVICE_ORDER=PCI_BUS_ID
+ExecStart=/bin/bash -c 'source %h/ai4robot/gpu.env && CUDA_VISIBLE_DEVICES=$GPU4080 exec /data/microduck/tts/venv/bin/python /data/microduck/tts/duckbrain/server.py'
+StandardOutput=append:/data/microduck/tts/duckbrain.log
+StandardError=append:/data/microduck/tts/duckbrain.log
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

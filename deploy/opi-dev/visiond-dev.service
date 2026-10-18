@@ -1,0 +1,14 @@
+[Unit]
+Description=visiond (dev): Xiaobai's eyes - the head camera on demand (QR Wi-Fi provisioning first)
+After=lifed-dev.service
+
+[Service]
+ExecStart=/usr/bin/python3 %h/visiond/visiond.py
+WorkingDirectory=%h/visiond
+StandardOutput=append:%h/robot/recs/visiond-service.log
+StandardError=append:%h/robot/recs/visiond-service.log
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

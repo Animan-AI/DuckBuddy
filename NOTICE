@@ -1,0 +1,31 @@
+Microduck Life
+Copyright 2026 the Microduck Life contributors
+
+This product is a modified version of Microduck by Pollen Robotics
+(https://github.com/pollen-robotics/microduck), licensed under the Apache License, Version 2.0.
+Copyright Pollen Robotics. The files of Microduck that this project changed, added to or removed are
+listed in UPSTREAM-CHANGES.md; the original licence is in LICENSE.
+
+Microduck Life is an independent project, not affiliated with or endorsed by Pollen Robotics.
+"Microduck" and "Pollen Robotics" are names of Pollen Robotics and are used here only to say where
+this work comes from.
+
+Components under their own licences
+-----------------------------------
+
+deploy/audio/aic3x-dkms/
+    The Linux kernel driver for the TI TLV320AIC3x audio codecs, packaged for DKMS.
+    GNU General Public License, version 2. The original copyright notices are kept in the files.
+
+tools/visiond/models/face_detection_yunet_2023mar.onnx
+    YuNet face detector, OpenCV Zoo (https://github.com/opencv/opencv_zoo). MIT License.
+    See tools/visiond/models/README.md.
+
+duck-detect/models/
+    From Microduck (Pollen Robotics), Apache License 2.0.
+
+Documentation (docs/, *.md) is licensed under the Creative Commons Attribution 4.0 International
+License (CC-BY-4.0) unless a file says otherwise.
+
+Models fetched at install time (not in this repository) keep their own licences: SenseVoice and the
+GTCRN denoiser through sherpa-onnx, and any language model used by tools/duckbrain.

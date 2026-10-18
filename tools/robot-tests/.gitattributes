@@ -1,0 +1,2 @@
+# These run on the robot (Linux): keep LF whatever core.autocrlf says.
+* text eol=lf

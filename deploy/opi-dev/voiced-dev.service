@@ -1,0 +1,15 @@
+[Unit]
+Description=voiced (dev): Xiaobai's ears - VAD + SenseVoice offline, its name and words to lifed
+After=lifed-dev.service
+BindsTo=lifed-dev.service
+
+[Service]
+ExecStart=%h/voiced/.venv/bin/python %h/voiced/hearing.py
+WorkingDirectory=%h/voiced
+StandardOutput=append:%h/robot/recs/voiced-service.log
+StandardError=append:%h/robot/recs/voiced-service.log
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=lifed-dev.service

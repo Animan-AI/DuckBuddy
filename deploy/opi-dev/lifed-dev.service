@@ -1,0 +1,16 @@
+[Unit]
+Description=lifed (dev): the duck's life layer - homeostasis, drives, affect, life state machine
+# Only asks robotd; it never powers motors. Follows robotd up and down.
+BindsTo=robotd-dev.service
+After=robotd-dev.service padd-dev.service
+
+[Service]
+ExecStart=/usr/bin/python3 %h/lifed/lifed.py
+WorkingDirectory=%h/lifed
+StandardOutput=append:%h/robot/recs/lifed-service.log
+StandardError=append:%h/robot/recs/lifed-service.log
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=robotd-dev.service

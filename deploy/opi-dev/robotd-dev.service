@@ -1,0 +1,20 @@
+# User unit for the rev-a dev robot (OPi Zero 3W): robotd from ~/robot, its config through the
+# ~/robot/active.toml symlink. `systemctl --user` needs no sudo; boot start needs lingering once:
+#   sudo loginctl enable-linger orangepi
+# Torque stays off at start (robotd never powers the joints on its own). Not restarted on a crash:
+# a restart turns torque off first, which drops a standing robot — better a frozen robot and a
+# person who notices than an automatic collapse.
+[Unit]
+Description=robotd (rev-a dev, ~/robot/active.toml)
+After=sound.target
+
+[Service]
+WorkingDirectory=%h/robot
+Environment=ORT_DYLIB_PATH=%h/robot/onnxruntime-linux-aarch64-1.28.3/lib/libonnxruntime.so
+ExecStart=%h/robot/robotd --params %h/robot/active.toml --socket /tmp/robotd.sock
+StandardOutput=append:%h/robot/recs/robotd-service.log
+StandardError=append:%h/robot/recs/robotd-service.log
+Restart=no
+
+[Install]
+WantedBy=default.target

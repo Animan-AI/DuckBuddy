@@ -1,0 +1,22 @@
+# Any level, not just the root: running cargo inside a member directory creates a
+# nested one (updater/target), and `/target` would not match it.
+target/
+
+# ── never commit signing material ────────────────────────────────────────────
+#
+# `cargo xtask keygen` refuses to write keys inside the repo, so these patterns are
+# belt-and-braces for keys arriving some other way — copied in by hand, dropped by a
+# script, left behind by a test. A committed signing key cannot be un-leaked by
+# deleting the file: it stays in history, and every robot that trusts it must be
+# considered compromised.
+*.key
+*.pem
+secret*
+!*.pub
+
+# Release output. Contains artifacts and signatures; regenerate rather than commit.
+/dist
+/staged
+
+# Playground and scratch state (see updater/examples/playground.rs).
+/verify

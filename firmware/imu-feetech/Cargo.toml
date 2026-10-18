@@ -1,0 +1,31 @@
+[package]
+name = "imu-feetech"
+version = "0.1.0"
+edition = "2021"
+description = "PDB IMU board firmware: LSM6DSV16X SFLP served as a Feetech bus device (ID 200)"
+license = "Apache-2.0"
+
+# Not a member of the daemon workspace: different target, different toolchain needs.
+[workspace]
+
+[dependencies]
+embassy-stm32 = { version = "0.6", features = ["stm32g031f8", "memory-x", "time-driver-any", "unstable-pac"] }
+embassy-executor = { version = "0.10", features = ["platform-cortex-m", "executor-thread"] }
+embassy-time = "0.5"
+embassy-sync = "0.8"
+embedded-io-async = "0.7"
+static_cell = "2"
+# Cortex-M0+ has no compare-and-swap; atomics fall back to a critical section.
+portable-atomic = { version = "1", features = ["critical-section"] }
+cortex-m = { version = "0.7", features = ["critical-section-single-core", "inline-asm"] }
+cortex-m-rt = "0.7"
+panic-halt = "1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+debug = 2
+
+[profile.dev]
+opt-level = "s"

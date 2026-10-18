@@ -1,0 +1,13 @@
+[Unit]
+Description=tofd (dev): the head ToF (VL53L5CX on the HAT's J5, /dev/i2c-2 with the codec), 8x8 depth at 15 Hz on /tmp/tofd.sock
+
+[Service]
+ExecStart=%h/robot/tofd --bus /dev/i2c-2 --socket /tmp/tofd.sock
+WorkingDirectory=%h/robot
+StandardOutput=append:%h/robot/recs/tofd-service.log
+StandardError=append:%h/robot/recs/tofd-service.log
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

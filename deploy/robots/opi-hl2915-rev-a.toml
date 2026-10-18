@@ -1,0 +1,64 @@
+# robotd.toml for the rev-a MicroDuck: Orange Pi Zero 3W (A733) + HAT R3E + PDB R2f,
+# 15 Feetech HL-2915 servos. Calibrated 2026-10-03; copy to /etc/robot/robotd.toml
+# (or run `robotd --params <this file>`).
+#
+# joint_ids / joint_signs: identified by moving servos and naming the joint, every leg
+# pair re-checked by moving left and right together — a single servo watched alone was
+# misread four times, so re-check any change that way.
+# joint_offsets: encoder counts read with the robot hand-posed in the model's zero pose
+# (everything straight). The mouth's is set so -5° (closed) lands just on the stop.
+# The ankles are the hand-posed values. A 60-count trim to make the robot stand upright
+# with no policy (it read 8° back) was tried on 2026-10-04 and reverted on 10-05: with the
+# soles held square to the shins the trimmed ankles read +7.3° / -4.8°, the trim's
+# +5.3° / -5.3° within hand-posing error — it moved the body ~5° forward over the feet,
+# which showed up as a centre of mass sitting near the toes. Calibration is for true joint
+# angles; standing upright is the policy's job.
+# Re-set on the robot since (training/data/2026-10-12-feet/README.md): the hip rolls on 10-11 (the
+# soles' inner edges lifted: the legs splayed ~4 deg more than the model knew; left / right from the
+# IMU's trunk roll), the hip yaws and rolls again on 10-12 (toes out 3.8 deg; "hr9y2": shins 5/4 deg
+# in the air as the model, roll < 1 deg standing), and the mouth 5 deg off its stop (pressing on it,
+# it was the hottest servo). Check them again after a leg is rebuilt (the bearings, 10-17).
+
+[bus]
+port = "/dev/ttyS7"
+servo = "feetech_hls"
+#             L-yaw roll pitch knee ankle neck head  yaw  roll mouth R-yaw roll pitch knee ankle
+joint_ids     = [8,  11,   6,   7,  15,   4,   3,   5,   2,   1,   9,  10,  12,  13,  14]
+joint_signs   = [-1, -1,  -1,  -1,  -1,   1,   1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1]
+# 2026-10-17 after the leg bearings: hip rolls re-set from the shins in the air (phone level, outer face,
+# top out: left 4 / right 7 deg against the model 4.8 / 5.4 at the readings) - left out 0.8, right in
+# 1.6 deg (11.4 counts/deg). OPi: life-hr17.toml.
+joint_offsets = [100, 0, -606, -256, -129, 242, 227, -35, 139, -98, 93, 248, 523, 840, 223]
+imu = true
+# U2 on the PDB's bottom face: measured lying on its back (gravity on sensor -y) and
+# upright (sensor +z), checked leaning forward.
+imu_axes = "y,x,-z"
+# The median-of-3 filter added a tick of IMU lag and the walk rocked (2026-10-10); the board sits
+# 3.3 deg pitched and, reseated on 10-11, 2 deg rolled.
+imu_median = false
+imu_pitch_trim_deg = 3.3
+imu_roll_trim_deg = 2.0
+# Live position gains: the factory 32 measured ~11 N·m/rad against the policies' trained
+# 0.55, and the walking policy kicked itself over at it.
+# 16 for the legs too: the Kp 8 / 12 walks trained 10-11 were no better in the robot-matched
+# simulation (training/data/sim-hl2915/v6-kp-sweep-20261011/).
+position_kp = 16
+position_kp_head = 16
+position_kd = 8
+# Half the servos' own 2925 mA while bringing the robot up.
+current_limit_ma = 1300.0
+# The mouth holds nothing: unpowered, it stays cool; powered while it speaks, for lip sync (10-14).
+mouth_torque = false
+mouth_wake = true
+
+[thermal]
+# 65 until 2026-10-13. The reading is the servo's driver board, which heats ~13 C a minute whenever
+# the servo pushes and cools as fast (2 min torque-off: 45 -> 37 C); the HL-2915s unload themselves
+# at 80 C (register 13). 70 leaves 10 C to that and lets a walking trial finish.
+walk_max_c = 70.0
+
+[battery]
+# HL-2915s, rated 9-14 V: the 3S LiPo (1500 mAh) and the 3S LiHV (2800 mAh). A 2S is refused rather
+# than walked weak; a full 3S LiHV (13.05 V) is inside the rating.
+cells = [3]
+max_volts = 14.0

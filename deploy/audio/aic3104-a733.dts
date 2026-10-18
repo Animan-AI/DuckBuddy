@@ -1,0 +1,137 @@
+/dts-v1/;
+/plugin/;
+
+/*
+ * MicroDuck TLV320AIC3104 HAT on Orange Pi Zero 3W (Allwinner A733).
+ *
+ * Header wiring:
+ *   TWI2:  PE1/PE2      I2S0: PB4..PB8
+ *   RESET: PB0, active low    AMP_SD: PB3, active high
+ *
+ * The A733 BSP kernel does not provide simple-audio-card, so this overlay
+ * reuses the vendor sunxi-snd-mach node already present in the base DTB.
+ */
+
+/ {
+	compatible = "xunlong,orangepi-4-pro", "arm,sun60iw2p1";
+
+	fragment@0 {
+		target-path = "/";
+
+		__overlay__ {
+			microduck_codec_3v3: microduck-codec-3v3 {
+				compatible = "regulator-fixed";
+				regulator-name = "microduck-codec-3v3";
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+			};
+
+			microduck_codec_1v8: microduck-codec-1v8 {
+				compatible = "regulator-fixed";
+				regulator-name = "microduck-codec-1v8";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
+			};
+
+			/*
+			 * gpio-leds gives userspace a persistent, race-free owner for
+			 * AMP_SD. The mixer service enables it only after codec setup.
+			 */
+			microduck_amp_control {
+				compatible = "gpio-leds";
+
+				amp-enable {
+					label = "microduck-amp-enable";
+					gpios = <&pio 1 3 0>;
+					default-state = "off";
+				};
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&twi2>;
+
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+			twi_drv_used = <1>;
+
+			aic3104: codec@18 {
+				compatible = "ti,tlv320aic3104";
+				reg = <0x18>;
+				#sound-dai-cells = <0>;
+				reset-gpios = <&pio 1 0 1>;
+				/*
+				 * MICBIAS 2.5 V. Without this the driver leaves the bias off
+				 * (register 25 = 0x06) and the electret mics on J7/J8, which take
+				 * their power from it through R13/R19, record nothing but DC.
+				 */
+				ai3x-micbias-vg = <2>;
+				IOVDD-supply = <&microduck_codec_3v3>;
+				DVDD-supply = <&microduck_codec_1v8>;
+				AVDD-supply = <&microduck_codec_3v3>;
+				DRVDD-supply = <&microduck_codec_3v3>;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2s0_plat>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&i2s0_mach>;
+
+		__overlay__ {
+			status = "okay";
+			soundcard-mach,name = "aic3104";
+			soundcard-mach,format = "i2s";
+			soundcard-mach,slot-num = <2>;
+			soundcard-mach,slot-width = <32>;
+			soundcard-mach,jack-support = <0>;
+			soundcard-mach,frame-master = <&i2s0_cpu>;
+			soundcard-mach,bitclock-master = <&i2s0_cpu>;
+			soundcard-mach,widgets =
+				"Speaker", "Speaker",
+				"Microphone", "Mic 1",
+				"Microphone", "Mic 2";
+			soundcard-mach,routing =
+				"Speaker", "LLOUT",
+				"Speaker", "RLOUT",
+				"MIC2L", "Mic 1",
+				"MIC2R", "Mic 1",
+				"Mic 1", "Mic Bias",
+				"LINE1L", "Mic 2",
+				"LINE1R", "Mic 2",
+				"Mic 2", "Mic Bias";
+		};
+	};
+
+	fragment@4 {
+		target = <&i2s0_cpu>;
+
+		__overlay__ {
+			/* 22.5792 MHz for 44.1 kHz and 24.576 MHz for 48 kHz. */
+			soundcard-mach,pll-fs = <1>;
+			soundcard-mach,mclk-fs = <2>;
+			soundcard-mach,mclk-fp = <11289600 12288000>;
+		};
+	};
+
+	fragment@5 {
+		target = <&i2s0_codec>;
+
+		__overlay__ {
+			sound-dai = <&aic3104>;
+		};
+	};
+};

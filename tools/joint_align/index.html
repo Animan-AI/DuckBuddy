@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>关节对照</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1d232b;--muted:#6b7480;--line:#e3e6ea;--ok:#1f9d55;--warn:#d97706;--bad:#dc2626;--acc:#2563eb;--sel:#eef4ff}
+@media (prefers-color-scheme:dark){:root{--bg:#14171b;--card:#1d2127;--ink:#e6e9ed;--muted:#9aa3ad;--line:#2c323a;--sel:#1e2a40}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+h1{font-size:17px;margin:0}
+#status{color:var(--muted)}
+#status.ok{color:var(--ok)}#status.bad{color:var(--bad)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:16px;padding:16px}
+@media (max-width:1000px){main{grid-template-columns:1fr}}
+.views{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+figure img:not([src]){visibility:hidden}
+figure img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:#223}
+figcaption{padding:6px 10px;color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+tr.sel{background:var(--sel)}
+tbody tr{cursor:pointer}
+.d0{color:var(--ok)}.d1{color:var(--warn)}.d2{color:var(--bad)}
+.ref{display:flex;gap:8px;margin:0 0 8px}
+button{font:inherit;padding:5px 10px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);cursor:pointer}
+button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.imu{display:flex;gap:16px;margin:10px 0 0;color:var(--muted)}
+.help{color:var(--muted);font-size:13px;margin-top:12px}
+.help ol{padding-left:18px;margin:6px 0}
+input[type=range]{width:110px}
+</style>
+</head>
+<body>
+<header>
+  <h1>关节对照：实机 → 训练模型</h1>
+  <span id="status">…</span>
+</header>
+<main>
+  <section>
+    <div class="views">
+      <figure><img id="front" alt="正面"><figcaption>正面（机器人朝你，它的左腿在画面右边）</figcaption></figure>
+      <figure><img id="side" alt="侧面"><figcaption>左侧面（从机器人左边看，机器人朝左）</figcaption></figure>
+      <figure><img id="bump" alt="正方向预览"><figcaption id="bumpcap">点右侧表格中的关节：这里显示该关节再往<b>正方向</b>转 20° 的样子</figcaption></figure>
+    </div>
+    <div class="help">
+      <b>怎么用</b>（扭矩关着，用手摆机器人）：
+      <ol>
+        <li>先把机器人摆成<b>零位</b>（腿伸直、头摆正，和标定时一样），"参考"选零位：所有关节应接近 0°。</li>
+        <li>逐个关节：在表格里点它，看第三张图它的正方向往哪转；再用手把实机这个关节往同一方向转 —— 前两张图里的模型应该跟着同向转，读数变大。</li>
+        <li>摆成站姿（home），"参考"选 home：差值应在几度以内，躯干俯仰 / 横滚应接近 0。</li>
+      </ol>
+      颜色：差值 &lt;3° 绿，&lt;8° 黄，其余红。
+    </div>
+  </section>
+  <section class="card">
+    <div class="ref">参考：
+      <button id="r-zero" class="on">零位</button>
+      <button id="r-home">站姿 home</button>
+    </div>
+    <table>
+      <thead><tr><th>关节</th><th>实机°</th><th>参考°</th><th>差°</th><th id="demoh" hidden>演示</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="imu"><span>躯干俯仰 <b id="pitch">–</b>°（正=前倾）</span><span>横滚 <b id="roll">–</b>°</span></div>
+  </section>
+</main>
+<script>
+let ref = "zero", sel = null, st = null, demoPose = null;
+const $ = id => document.getElementById(id);
+$("r-zero").onclick = () => { ref = "zero"; $("r-zero").classList.add("on"); $("r-home").classList.remove("on"); draw(); };
+$("r-home").onclick = () => { ref = "home"; $("r-home").classList.add("on"); $("r-zero").classList.remove("on"); draw(); };
+const deg = r => r * 180 / Math.PI;
+
+function draw() {
+  if (!st) return;
+  const tb = $("rows");
+  if (!tb.children.length) {
+    st.names.forEach((n, i) => {
+      const tr = document.createElement("tr");
+      tr.dataset.i = i;
+      tr.innerHTML = `<td>${st.cn[i]}<br><small style="color:var(--muted)">${n}</small></td><td class="v"></td><td class="r"></td><td class="d"></td>` +
+        (st.demo ? `<td><input type="range" min="-90" max="90" step="1" value="${Math.round(deg(st.joints[i]))}"></td>` : "");
+      tr.onclick = e => { if (e.target.tagName === "INPUT") return; sel = n; [...tb.children].forEach(r => r.classList.toggle("sel", r === tr)); };
+      if (st.demo) tr.querySelector("input").oninput = e => {
+        demoPose = demoPose || st.joints.slice();
+        demoPose[i] = +e.target.value * Math.PI / 180;
+        fetch("/demo_pose", {method: "POST", body: JSON.stringify({joints: demoPose})});
+      };
+      tb.appendChild(tr);
+    });
+    $("demoh").hidden = !st.demo;
+  }
+  [...tb.children].forEach((tr, i) => {
+    const v = deg(st.joints[i]), r = ref === "zero" ? 0 : deg(st.home[i]), d = v - r;
+    tr.querySelector(".v").textContent = v.toFixed(1);
+    tr.querySelector(".r").textContent = r.toFixed(1);
+    const dc = tr.querySelector(".d");
+    dc.textContent = (d >= 0 ? "+" : "") + d.toFixed(1);
+    dc.className = "d " + (Math.abs(d) < 3 ? "d0" : Math.abs(d) < 8 ? "d1" : "d2");
+  });
+  $("pitch").textContent = st.pitch.toFixed(1);
+  $("roll").textContent = st.roll.toFixed(1);
+  const s = $("status");
+  const fresh = st.demo || (st.age !== null && st.age < 1.0);
+  s.textContent = st.status + (st.age !== null && !st.demo ? `（${st.age.toFixed(1)} s 前）` : "") + (st.policy ? ` · policy=${st.policy}` : "");
+  s.className = fresh ? "ok" : "bad";
+}
+
+async function poll() {
+  try { st = await (await fetch("/state")).json(); draw(); } catch (e) { $("status").textContent = "网页服务没响应"; }
+  setTimeout(poll, 150);
+}
+function loadImg(id, url) {
+  return new Promise(res => { const im = new Image(); im.onload = () => { $(id).src = im.src; res(); }; im.onerror = res; im.src = url; });
+}
+async function frames() {
+  const t = Date.now();
+  await loadImg("front", `/frame?view=front&t=${t}`);
+  await loadImg("side", `/frame?view=side&t=${t}`);
+  if (sel) {
+    await loadImg("bump", `/frame?view=iso&bump=${sel}&deg=20&t=${t}`);
+    $("bumpcap").innerHTML = `<b>${st ? st.cn[st.names.indexOf(sel)] : sel}</b> 再往正方向转 20° 的样子（左前方视角）`;
+  }
+  setTimeout(frames, 60);
+}
+poll(); frames();
+</script>
+</body>
+</html>

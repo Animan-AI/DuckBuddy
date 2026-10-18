@@ -1,0 +1,34 @@
+# The head ToF sensor: an 8x8 depth matrix from a VL53L8CX, and the daemon that
+# serves it.
+#
+# The driver is ST's Ultra Lite Driver (vendored C, BSD-3-Clause) behind a flat
+# shim and a safe Rust wrapper — see src/lib.rs for why the C is vendored rather
+# than reimplemented or depended on. `tofd` owns the sensor and publishes frames;
+# nothing else touches the bus.
+[package]
+name = "tof"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "tof"
+
+[[bin]]
+name = "tofd"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { workspace = true, features = ["derive"] }
+duck-ipc-proto = { path = "../duck-ipc-proto" }
+libc = "0.2"
+serde = { workspace = true }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "net", "rt", "signal", "sync", "time", "io-util"] }
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+[build-dependencies]
+cc = "1"

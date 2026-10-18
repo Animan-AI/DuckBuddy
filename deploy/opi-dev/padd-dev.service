@@ -1,0 +1,18 @@
+# User unit: the gamepad client, with the BLE Xbox pad's SDL mapping (deploy/padd/xbox-ble.sdlmap).
+# padd exits when robotd goes away, so it is restarted; it waits quietly while no pad is connected.
+[Unit]
+Description=padd (gamepad -> robotd)
+After=robotd-dev.service
+BindsTo=robotd-dev.service
+
+[Service]
+WorkingDirectory=%h/robot
+ExecStartPre=/bin/mkdir -p /tmp/padd
+ExecStart=/bin/sh -c 'SDL_GAMECONTROLLERCONFIG="$(cat %h/robot/xbox-ble.sdlmap)" exec %h/robot/padd --socket /tmp/robotd.sock --tap-socket /tmp/padd/tap.sock'
+StandardOutput=append:%h/robot/recs/padd-service.log
+StandardError=append:%h/robot/recs/padd-service.log
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=robotd-dev.service

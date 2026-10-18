@@ -1,0 +1,15 @@
+[Unit]
+Description=frpc (dev): Xiaobai's brain on 127.0.0.1:8210, an stcp visitor through the Aliyun frps
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# ~/.config/frp/frpc.toml (600) comes from deploy/frp/duckbrain-stcp-setup.sh on the V100 box.
+ExecStart=%h/frp/frpc -c %h/.config/frp/frpc.toml
+StandardOutput=append:%h/robot/recs/frpc-service.log
+StandardError=append:%h/robot/recs/frpc-service.log
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,38 @@
+# ~/.asoundrc on the dev robot (2026-10-14). Speaker and mic share the codec's one I2S clock
+# (TLV320AIC3104 on the HAT): a plain aplay closing stopped it, and the mic read zeros from then on.
+# So playback goes through dmix and capture through dsnoop on one 48 kHz stream, which voiced keeps
+# open with silence. robotd plays to "duck_out" ([audio] device), voiced records from "duck_in".
+pcm.duck_dmix {
+    type dmix
+    ipc_key 52048
+    ipc_perm 0666
+    slave {
+        pcm "hw:CARD=aic3104,DEV=0"
+        rate 48000
+        channels 2
+        format S16_LE
+        period_size 1024
+        buffer_size 8192
+    }
+}
+pcm.duck_dsnoop {
+    type dsnoop
+    ipc_key 52049
+    ipc_perm 0666
+    slave {
+        pcm "hw:CARD=aic3104,DEV=0"
+        rate 48000
+        channels 2
+        format S16_LE
+        period_size 1024
+        buffer_size 8192
+    }
+}
+pcm.duck_out {
+    type plug
+    slave.pcm "duck_dmix"
+}
+pcm.duck_in {
+    type plug
+    slave.pcm "duck_dsnoop"
+}

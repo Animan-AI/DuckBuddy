@@ -1,0 +1,15 @@
+[Unit]
+Description=MicroDuck TLV320AIC3104 mixer and amplifier setup
+After=systemd-modules-load.service
+Before=robotd.service
+
+[Service]
+Type=oneshot
+Environment=AIC3104_I2C_BUS=2
+Environment=AIC3104_MIC_ROUTE=line1-diff
+ExecStart=/usr/local/bin/aic3104-init.sh
+ExecStop=/bin/sh -c 'test ! -w /sys/class/leds/microduck-amp-enable/brightness || echo 0 > /sys/class/leds/microduck-amp-enable/brightness'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+# ~/.config/systemd/user/duckjev.service on the V100 box: Jev (TypeSafe System One) for Xiaobai,
+# tools/duckbrain/judge.py in its own venv (typesafe-sdk needs a newer pydantic than duckbrain's), on
+# 127.0.0.1:8211 only; duckbrain's /judge forwards here. No GPU.
+[Unit]
+Description=duckjev: Jev judgments for Xiaobai (TypeSafe API), 127.0.0.1:8211
+
+[Service]
+WorkingDirectory=/data/microduck/tts
+# one line TYPESAFE_API_KEY=..., mode 600, written by the user (optional: without it every judgment
+# answers no_api_key and the robot keeps to its rules)
+EnvironmentFile=-%h/.config/duckbrain/typesafe.env
+# TypeSafe refuses this region (HTTP 451) without the user's proxy, which their shell has and a systemd
+# unit does not inherit: its HTTP(S)_PROXY / NO_PROXY copied there, mode 600 (the user agreed 2026-10-17).
+# Not ALL_PROXY: it is socks5h, which httpx2 cannot use without socksio.
+EnvironmentFile=-%h/.config/duckbrain/proxy.env
+ExecStart=/data/microduck/tts/jev-venv/bin/python /data/microduck/tts/duckbrain/judge.py 8211
+StandardOutput=append:/data/microduck/tts/duckjev.log
+StandardError=append:/data/microduck/tts/duckjev.log
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

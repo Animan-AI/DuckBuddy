@@ -1,0 +1,6 @@
+[build]
+target = "thumbv6m-none-eabi"
+
+[target.thumbv6m-none-eabi]
+runner = "probe-rs run --chip STM32G031F8Px"
+rustflags = ["-C", "link-arg=-Tlink.x"]
