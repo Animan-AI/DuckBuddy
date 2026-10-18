@@ -1,4 +1,4 @@
-# Microduck Life
+# DuckBuddy
 
 *A little biped duck that walks on reinforcement-learning policies and has a life of its own — built on
 [Pollen Robotics' Microduck](https://github.com/pollen-robotics/microduck), re-engineered around
@@ -10,14 +10,14 @@ https://github.com/user-attachments/assets/7dd5c290-7b48-4f87-a991-7aab6c25632f
 
 *Spoken instructions, and it does the moves one after another (recorded 2026-10-17, with sound).*
 
-The name says what it is: Microduck, with a life of its own.
+The name says what it is: a little duck that is your buddy.
 
-> Microduck Life is an independent community project. It is **not** affiliated with or endorsed by Pollen
+> DuckBuddy is an independent community project. It is **not** affiliated with or endorsed by Pollen
 > Robotics; "Microduck" is their name for their robot. See [NOTICE](NOTICE).
 
 ## What it adds to Microduck
 
-| | Microduck | Microduck Life |
+| | Microduck | DuckBuddy |
 |---|---|---|
 | Servos | 15 × Dynamixel XL330 (2S) | 15 × **Feetech HL-2915** (3S), HD-1910 (2S) on the way |
 | Main board | Radxa Zero 3W (RK3566, 1 GB) | **Orange Pi Zero 3W** (Allwinner A733: 2×A76 + 6×A55, 4 GB, 3 TOPS NPU) |

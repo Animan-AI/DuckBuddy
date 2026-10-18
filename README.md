@@ -1,4 +1,4 @@
-# Microduck Life（鸭生）
+# DuckBuddy
 
 *一只靠强化学习策略走路、有自己"生活"的小两足鸭子。基于 [Pollen Robotics 的 Microduck](https://github.com/pollen-robotics/microduck)，改用低成本的飞特舵机和 Orange Pi Zero 3W。*
 
@@ -8,13 +8,13 @@ https://github.com/user-attachments/assets/7dd5c290-7b48-4f87-a991-7aab6c25632f
 
 *用语音说一串指令，它连续完成几个动作（2026-10-17 录，有声音）。*
 
-名字的意思是：这是给 Microduck 做的，让它有自己的"生活"。
+名字的意思是：一只陪你生活的小鸭伙伴（buddy）。
 
-> Microduck Life 是独立的社区项目，**不隶属于 Pollen Robotics，也未获其背书**。"Microduck" 是他们给自己机器人起的名字。详见 [NOTICE](NOTICE)。
+> DuckBuddy 是独立的社区项目，**不隶属于 Pollen Robotics，也未获其背书**。"Microduck" 是他们给自己机器人起的名字。详见 [NOTICE](NOTICE)。
 
 ## 相对 Microduck 的改动
 
-|  | Microduck | Microduck Life |
+|  | Microduck | DuckBuddy |
 |---|---|---|
 | 舵机 | 15 × Dynamixel XL330（2S） | 15 × **飞特 HL-2915**（3S）；HD-1910（2S）在做 |
 | 主控 | Radxa Zero 3W（RK3566，1 GB） | **Orange Pi Zero 3W**（全志 A733：2×A76 + 6×A55，4 GB，3 TOPS NPU） |
