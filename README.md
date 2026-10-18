@@ -194,3 +194,11 @@ flowchart TB
 ## 许可证
 
 软件：Apache-2.0（与 Microduck 相同）。文档：CC-BY-4.0。部分组件有各自的许可证，见 [NOTICE](NOTICE)。
+
+## 交流群
+
+欢迎进群交流：玩法、组装、调试、训练，都可以聊。微信扫码加入：
+
+<p align="center"><img src="docs/media/wechat-group.png" width="300" alt="DuckBuddy 交流群微信二维码"></p>
+
+<p align="center"><sub>群二维码每周更新；过期了请提 Issue，我们会尽快换新的。</sub></p>

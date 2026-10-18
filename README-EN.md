@@ -210,3 +210,11 @@ for the attention, AprilTag localisation for the mission planner, English transl
 
 Software: Apache-2.0 (as Microduck). Documentation: CC-BY-4.0. Some components carry their own licences —
 see [NOTICE](NOTICE).
+
+## Community
+
+Come and chat: building, tuning, training, or just showing off your duck. The WeChat group:
+
+<p align="center"><img src="docs/media/wechat-group.png" width="300" alt="DuckBuddy WeChat group QR code"></p>
+
+<p align="center"><sub>WeChat group codes expire after a week and are refreshed here; if this one has lapsed, open an issue.</sub></p>

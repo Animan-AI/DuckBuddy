@@ -1,6 +1,6 @@
 # Changes to Microduck
 
-This project starts from Pollen Robotics' Microduck at commit `590b986bd8c0` (2026-08-27), Apache License 2.0. Every file below is a Microduck file this project has modified or removed; 723 files are new. The git history of the changes is kept by the maintainer.
+This project starts from Pollen Robotics' Microduck at commit `590b986bd8c0` (2026-08-27), Apache License 2.0. Every file below is a Microduck file this project has modified or removed; 724 files are new. The git history of the changes is kept by the maintainer.
 
 ## Modified (37)
 
