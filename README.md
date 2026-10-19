@@ -19,6 +19,15 @@ https://github.com/user-attachments/assets/7dd5c290-7b48-4f87-a991-7aab6c25632f
 
 <p align="center"><sub>用语音说一串指令，它连续完成几个动作（2026-10-17 实机录制，有声音，点开后取消静音）。</sub></p>
 
+<details>
+<summary>📱 在 GitHub App 里看不到视频？点这里看动图</summary>
+
+<p align="center"><img src="docs/media/demo.gif" width="480" alt="演示动图（3 倍速）"></p>
+
+<p align="center"><sub>3 倍速动图，没有声音。完整视频：<a href="https://github.com/Animan-AI/DuckBuddy/raw/main/docs/media/demo.mp4">下载 demo.mp4</a>（5.7 MB），或用浏览器打开本页。</sub></p>
+
+</details>
+
 我们想做的不只是"又一只机器鸭"，而是把**运动、环境感知、语音交互和生命层**整合成一个**可复刻、可改进**的开源系统：全部跑在机器人自己身上，不依赖手机或云端。
 
 <sub>DuckBuddy 基于 [Pollen Robotics 的 Microduck](https://github.com/pollen-robotics/microduck)，是独立的社区项目，**不隶属于 Pollen Robotics，也未获其背书**，详见 [NOTICE](NOTICE)。</sub>

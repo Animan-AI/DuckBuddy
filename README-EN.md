@@ -17,6 +17,15 @@ https://github.com/user-attachments/assets/7dd5c290-7b48-4f87-a991-7aab6c25632f
 
 <p align="center"><sub>A string of spoken instructions, done one move after another (recorded on the robot, 2026-10-17; it has sound — unmute the player).</sub></p>
 
+<details>
+<summary>📱 No video in the GitHub app? Open the GIF</summary>
+
+<p align="center"><img src="docs/media/demo.gif" width="480" alt="Demo GIF (3× speed)"></p>
+
+<p align="center"><sub>3× speed, no sound. The full video: <a href="https://github.com/Animan-AI/DuckBuddy/raw/main/docs/media/demo.mp4">download demo.mp4</a> (5.7 MB), or open this page in a browser.</sub></p>
+
+</details>
+
 This is not just another robot duck. DuckBuddy brings **motion, perception, voice and a life layer** together
 in one open system that you can **build and improve** — and all of it runs on the robot itself, without a
 phone or the cloud.
