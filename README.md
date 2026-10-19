@@ -4,6 +4,8 @@
 
 <p align="center">一只基于开源硬件、能走能跑，并逐步融合语音、视觉和自主行为的小型具身智能机器人。</p>
 
+<p align="center">🦆 <b>让 DuckBuddy 成为你真正的生活伙伴鸭。</b> <i>Your real-life buddy duck.</i></p>
+
 <p align="center">
 <a href="https://github.com/Animan-AI/DuckBuddy/actions/workflows/ci.yml"><img src="https://github.com/Animan-AI/DuckBuddy/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0">

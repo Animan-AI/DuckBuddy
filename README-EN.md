@@ -2,6 +2,8 @@
 
 <p align="center"><b>An open-source embodied AI robot duck — it walks, hears, sees, and has a life of its own.</b></p>
 
+<p align="center">🦆 <b>Make DuckBuddy your real-life buddy duck.</b> <i>让 DuckBuddy 成为你真正的生活伙伴鸭。</i></p>
+
 <p align="center">
 <a href="https://github.com/Animan-AI/DuckBuddy/actions/workflows/ci.yml"><img src="https://github.com/Animan-AI/DuckBuddy/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0">
