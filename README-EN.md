@@ -209,7 +209,7 @@ Our two boards, the HAT and the PDB/IMU:
 | Step | Where | Status |
 |---|---|---|
 | 1. Get the parts | the parts list below | ✅ list · 🚧 shop links coming |
-| 2. Print | [hardware/print](hardware/print/README.md): Bambu Studio project `microduck2.3mf`, 9 plates, PETG + TPU, settings included | ✅ |
+| 2. Print | [hardware/print](hardware/print/README.md): Bambu Studio project `DuckBuddy.3mf`, 6 plates, PETG + TPU, settings included | ✅ |
 | 3. Carrier boards | interfaces (pinouts, power, bus): [docs/hardware/INTERFACE-CN.md](docs/hardware/INTERFACE-CN.md). The PCB design files are not public; assembled boards are available from the maintainer, or design your own to the interface | ✅ interface |
 | 4. Flash the IMU | [firmware/imu-feetech](firmware/imu-feetech/README.md): ST-Link on the PDB's J2, one `probe-rs` command | ✅ |
 | 5. Set up the Orange Pi | services in [deploy/opi-dev](deploy/opi-dev/README.md), robot configs in [deploy/robots](deploy/robots) | 🚧 one-step installer coming |

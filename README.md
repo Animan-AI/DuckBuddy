@@ -202,7 +202,7 @@ flowchart LR
 | 步骤 | 资料 | 状态 |
 |---|---|---|
 | 1. 准备零件 | 见下方零件清单 | ✅ 清单 · 🚧 购买链接整理中 |
-| 2. 3D 打印 | [hardware/print](hardware/print/README.md)：拓竹工程 `microduck2.3mf`，9 个打印盘，PETG + TPU，参数已设好 | ✅ |
+| 2. 3D 打印 | [hardware/print](hardware/print/README.md)：拓竹工程 `DuckBuddy.3mf`，6 个打印盘，PETG + TPU，参数已设好 | ✅ |
 | 3. 扩展板 | 接口（引脚、电源、总线）：[docs/hardware/INTERFACE-CN.md](docs/hardware/INTERFACE-CN.md)。PCB 设计文件不公开；可以向维护者购买焊好的板（进群联系），也可以按接口自己设计 | ✅ 接口 |
 | 4. 烧录 IMU 固件 | [firmware/imu-feetech](firmware/imu-feetech/README.md)：ST-Link 接 PDB 的 J2，`probe-rs` 一条命令烧录 | ✅ |
 | 5. 装主控系统和服务 | 服务配置见 [deploy/opi-dev](deploy/opi-dev/README.md)、机器人配置见 [deploy/robots](deploy/robots) | 🚧 一键安装脚本整理中 |
