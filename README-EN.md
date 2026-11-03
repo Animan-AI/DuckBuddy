@@ -213,9 +213,10 @@ Our two boards, the HAT and the PDB/IMU:
 | 3. Carrier boards | interfaces (pinouts, power, bus): [docs/hardware/INTERFACE-CN.md](docs/hardware/INTERFACE-CN.md). The PCB design files are not public; assembled boards are available from the maintainer, or design your own to the interface | ✅ interface |
 | 4. Flash the IMU | [firmware/imu-feetech](firmware/imu-feetech/README.md): ST-Link on the PDB's J2, one `probe-rs` command | ✅ |
 | 5. Set up the Orange Pi | services in [deploy/opi-dev](deploy/opi-dev/README.md), robot configs in [deploy/robots](deploy/robots) | 🚧 one-step installer coming |
-| 6. Policies | trained policies ship in the repo; to train your own see [training](training) | ✅ |
-| 7. Give it a character | [tools/persona](tools/persona/README.md): write your own persona JSON after the example duck | ✅ |
-| 8. Assembly guide, FAQ | a short FAQ below; an illustrated assembly guide is coming | 🚧 |
+| 6. Servos, zero pose, whole-robot test | [tools/bringup](tools/bringup/README.md): a web workbench on your computer - servo IDs, joint mapping, zero calibration, IMU firmware, self-test, each page with a guide (in Chinese) | ✅ |
+| 7. Policies | trained policies ship in the repo; to train your own see [training](training) | ✅ |
+| 8. Give it a character | [tools/persona](tools/persona/README.md): write your own persona JSON after the example duck | ✅ |
+| 9. Assembly guide, FAQ | a short FAQ below; an illustrated assembly guide is coming | 🚧 |
 
 ### Parts list
 
@@ -260,7 +261,7 @@ Our two boards, the HAT and the PDB/IMU:
 | Path | What |
 |---|---|
 | `robotd`, `duck-control`, `kinematics`, `padd`, `robotctl`, … | the Rust workspace (from Microduck, extended) |
-| `tools/` | the Python services: `lifed`, `voiced`, `visiond`, `duckweb`, `duckbrain`, `persona`, robot test scripts |
+| `tools/` | the Python services: `lifed`, `voiced`, `visiond`, `duckweb`, `duckbrain`, `persona`, the bring-up workbench `bringup`, robot test scripts |
 | `firmware/imu-feetech` | the IMU board's firmware (STM32G031 + LSM6DSV16X, speaks the Feetech protocol) |
 | `training/` | HL-2915 tasks, actuator identification (BAM), evaluation scripts, trained policies |
 | `hardware/` | the print project (`hardware/print`), the robot model used for training (`hardware/rev-a/mjcf`) |

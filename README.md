@@ -206,9 +206,10 @@ flowchart LR
 | 3. 扩展板 | 接口（引脚、电源、总线）：[docs/hardware/INTERFACE-CN.md](docs/hardware/INTERFACE-CN.md)。PCB 设计文件不公开；可以向维护者购买焊好的板（进群联系），也可以按接口自己设计 | ✅ 接口 |
 | 4. 烧录 IMU 固件 | [firmware/imu-feetech](firmware/imu-feetech/README.md)：ST-Link 接 PDB 的 J2，`probe-rs` 一条命令烧录 | ✅ |
 | 5. 装主控系统和服务 | 服务配置见 [deploy/opi-dev](deploy/opi-dev/README.md)、机器人配置见 [deploy/robots](deploy/robots) | 🚧 一键安装脚本整理中 |
-| 6. 策略 | 训练好的策略在仓库里，可以直接用；自己训练见 [training](training) | ✅ |
-| 7. 给它一个性格 | [tools/persona](tools/persona/README.md)：照着示例鸭子写你自己的人设 JSON | ✅ |
-| 8. 组装教程、常见问题 | 下方先列了常见问题；图文组装教程整理中 | 🚧 |
+| 6. 舵机、零位、整机测试 | [tools/bringup](tools/bringup/README.md)：电脑上开的网页工作台——舵机 ID、关节映射、零位标定、IMU 固件、整机自检，每页带图文教程 | ✅ |
+| 7. 策略 | 训练好的策略在仓库里，可以直接用；自己训练见 [training](training) | ✅ |
+| 8. 给它一个性格 | [tools/persona](tools/persona/README.md)：照着示例鸭子写你自己的人设 JSON | ✅ |
+| 9. 组装教程、常见问题 | 下方先列了常见问题；图文组装教程整理中 | 🚧 |
 
 ### 零件清单
 
@@ -247,7 +248,7 @@ flowchart LR
 | 路径 | 内容 |
 |---|---|
 | `robotd`、`duck-control`、`kinematics`、`padd`、`robotctl` 等 | Rust 工作区（来自 Microduck，有扩展） |
-| `tools/` | Python 服务：`lifed`、`voiced`、`visiond`、`duckweb`、`duckbrain`、`persona`，以及实机测试脚本 |
+| `tools/` | Python 服务：`lifed`、`voiced`、`visiond`、`duckweb`、`duckbrain`、`persona`，装机工作台 `bringup`，以及实机测试脚本 |
 | `firmware/imu-feetech` | IMU 板固件（STM32G031 + LSM6DSV16X，走飞特协议） |
 | `training/` | HL-2915 训练任务、执行器辨识（BAM）、评测脚本、训练好的策略 |
 | `hardware/` | 打印工程（`hardware/print`）、训练用的机器人模型（`hardware/rev-a/mjcf`） |

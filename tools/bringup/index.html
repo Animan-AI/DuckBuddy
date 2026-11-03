@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuckBuddy 装机工具</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #fff; --text: #1d2330; --muted: #6b7280; --line: #e3e6eb;
+  --accent: #2563eb; --ok: #15803d; --ok-bg: #dcfce7; --bad: #b91c1c; --bad-bg: #fee2e2;
+  --warn: #a16207; --warn-bg: #fef9c3; --code: #f1f3f6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c; --panel: #1c2028; --text: #e5e7eb; --muted: #9aa3af; --line: #2c323c;
+    --accent: #60a5fa; --ok: #4ade80; --ok-bg: #12331f; --bad: #f87171; --bad-bg: #3a1717;
+    --warn: #facc15; --warn-bg: #3a3212; --code: #242a33;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 system-ui, "Microsoft YaHei", "PingFang SC", sans-serif; }
+header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; background: var(--panel);
+  border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0; }
+#conn { color: var(--muted); font-size: 13px; }
+#estop { margin-left: auto; background: var(--bad); color: #fff; border: 0; font-weight: 600; }
+nav { display: flex; gap: 4px; padding: 8px 16px 0; flex-wrap: wrap; }
+nav button { border: 1px solid var(--line); border-bottom: 0; border-radius: 6px 6px 0 0; background: transparent;
+  color: var(--muted); padding: 6px 14px; }
+nav button.on { background: var(--panel); color: var(--text); font-weight: 600; }
+main { padding: 0 16px 40px; }
+section.tab { display: none; background: var(--panel); border: 1px solid var(--line); border-radius: 0 8px 8px 8px;
+  padding: 16px; }
+section.tab.on { display: block; }
+h2 { font-size: 15px; margin: 18px 0 8px; }
+h2:first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--text); cursor: pointer; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button:disabled { opacity: .5; cursor: default; }
+input, select { font: inherit; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--panel); color: var(--text); }
+input[type=number] { width: 80px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.muted { color: var(--muted); }
+.note { background: var(--code); border-radius: 6px; padding: 8px 10px; margin: 8px 0; font-size: 13px; }
+.warn { background: var(--warn-bg); color: var(--warn); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; }
+tr.click { cursor: pointer; }
+tr.click:hover, tr.sel { background: var(--code); }
+.scroll { overflow-x: auto; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.b-ok { background: var(--ok-bg); color: var(--ok); }
+.b-bad { background: var(--bad-bg); color: var(--bad); }
+.b-run { background: var(--warn-bg); color: var(--warn); }
+.b-none { background: var(--code); color: var(--muted); }
+.red { color: var(--bad); font-weight: 600; }
+pre { background: var(--code); padding: 8px; border-radius: 6px; max-height: 340px; overflow: auto;
+  font-size: 12px; margin: 6px 0; white-space: pre-wrap; }
+#log { position: fixed; right: 12px; bottom: 12px; max-width: min(520px, calc(100vw - 24px)); z-index: 9; }
+#log div { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+  padding: 8px 12px; margin-top: 6px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+#log div.err { border-left-color: var(--bad); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.mp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 8px 0; }
+.mp-grid h4 { margin: 2px 0 4px; font-size: 13px; color: var(--muted); font-weight: 500; }
+.mp-grid button { display: flex; justify-content: space-between; width: 100%; margin: 3px 0; text-align: left; gap: 6px; }
+.mp-grid button.set { background: var(--ok-bg); border-color: var(--ok); }
+.mp-grid button.chk { outline: 3px solid var(--warn); }
+.badge.click { cursor: pointer; }
+.tof { display: grid; grid-template-columns: repeat(8, 28px); gap: 2px; margin: 6px 0; }
+.tof div { height: 22px; font-size: 9px; display: flex; align-items: center; justify-content: center; color: #fff;
+  border-radius: 2px; }
+iframe { width: 100%; height: 900px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+svg.trace { width: 100%; max-width: 520px; height: 110px; background: var(--code); border-radius: 6px; }
+.kv td:first-child { color: var(--muted); }
+details.guide { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px;
+  padding: 8px 12px; margin: 0 0 14px; background: var(--code); font-size: 13.5px; }
+details.guide summary { cursor: pointer; font-weight: 600; }
+details.guide h3 { font-size: 14px; margin: 12px 0 4px; }
+details.guide ol, details.guide ul { margin: 4px 0; padding-left: 22px; }
+details.guide li { margin: 2px 0; }
+details.guide table { margin: 6px 0; background: var(--panel); }
+details.guide td, details.guide th { white-space: normal; vertical-align: top; }
+kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--panel); font: inherit; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>DuckBuddy 装机工具</h1>
+  <span id="conn">…</span>
+  <button id="estop" title="robotd 在跑就发 robot.relax，否则总线广播 扭矩开关=0">全部卸力</button>
+</header>
+<nav id="tabs">
+  <button data-tab="ov" class="on">总览</button>
+  <button data-tab="servo">舵机</button>
+  <button data-tab="zero">零位标定</button>
+  <button data-tab="imu">IMU 固件</button>
+  <button data-tab="test">整机测试</button>
+</nav>
+<main>
+
+<section class="tab on" id="ov">
+  <details class="guide" open id="g-ov">
+    <summary>教程：这个工具怎么用、一台新机器人按什么顺序做</summary>
+    <h3>开始之前</h3>
+    <ul>
+      <li>电脑能免密 ssh 到机器人（如 <code>orangepi@duck-1a2b.local</code> 或 <code>orangepi@机器人的 IP</code>）。启动时用 <code>--host</code> 指定。</li>
+      <li>机器人开机、连上 WiFi 后点<kbd>刷新</kbd>。页头会显示主机名和 robotd 的状态；连不上时会提示，常见原因是机器人没开机、WiFi 掉了或 IP 变了。</li>
+      <li>页头右边红色的<kbd>全部卸力</kbd>随时能按：robotd 在跑时让它 relax，没在跑时直接在总线上广播“扭矩关”。舵机乱动、发烫、冒烟时先按它，再断电。</li>
+    </ul>
+    <h3>robotd 什么时候要停、什么时候要开</h3>
+    <table>
+      <tr><th>要做的事</th><th>robotd</th><th>原因</th></tr>
+      <tr><td>舵机页（扫描、改 ID、摆动）<br>整机测试里的“舵机总线”“IMU”两项<br>IMU 固件页的“经总线核对”</td><td><b>停</b></td><td>robotd 一直占着 /dev/ttyS7，两边同时发包会互相打断</td></tr>
+      <tr><td>零位标定</td><td><b>开</b></td><td>标定页读的是 robotd 给出的关节角</td></tr>
+      <tr><td>麦克风、喇叭、ToF、摄像头</td><td>都行</td><td>它们不走舵机总线；摄像头要先停 visiond</td></tr>
+    </table>
+    <p><b>停 robotd 不会卸力。</b>机器人站着时先让它坐下或躺下，或者先按<kbd>全部卸力</kbd>，再停 robotd。</p>
+    <h3>一台新组装的机器人，推荐顺序</h3>
+    <ol>
+      <li><b>舵机配置</b>（装进机身之前，在“舵机”页用 USB 调试板）：逐只改 ID、改成 500k、回中后装舵盘。</li>
+      <li><b>板子上电体检</b>：焊接工作室交付时按测试说明量过一遍（二极管档、短路）；舵机插座先清洗，再量 V–GND、DATA–GND。</li>
+      <li><b>IMU 固件</b>：新 PDB 先用 ST-Link 烧 IMU（“IMU 固件”页）。</li>
+      <li><b>整机测试</b>：装好以后在“整机测试”页把六项跑一遍，全部通过再继续。</li>
+      <li><b>关节映射</b>：用“舵机”页的“关节映射”卡片逐只摆动、点选关节，然后改 ID 对号或写 joint_ids（右边“关节映射”表就是配置里的 joint_ids）。</li>
+      <li><b>零位标定</b>：在“零位标定”页标方向和零位，再站在 home 上精调。</li>
+      <li>最后再测一次“舵机总线”，导出报告存档。</li>
+    </ol>
+    <h3>USB 调试板</h3>
+    <p>出厂舵机是 1M 波特率。OPi 的 UART7 设成 1M 时实际只有 750k，所以<b>新舵机只能通过飞特 USB 调试板（CH343）配置</b>。插到电脑上后，在右边选它的串口（列表里标着“CH34x”），点<kbd>使用这个串口</kbd>。FD 上位机开着时会占住这个串口，要先关掉 FD。</p>
+  </details>
+  <div class="grid2">
+    <div class="card">
+      <h2>机器人</h2>
+      <div class="row"><button id="ov-refresh" class="primary">刷新</button>
+        <button id="ov-reconnect">重连代理</button></div>
+      <table class="kv" id="ov-robot"></table>
+      <h2>robotd</h2>
+      <div id="ov-robotd" class="muted">—</div>
+      <div class="row">
+        <button id="rd-stop" class="danger">停止 robotd</button>
+        <button id="rd-start">启动 robotd</button>
+      </div>
+      <div class="note">robotd 占着舵机总线：舵机页、总线和 IMU 测试要先停它；零位标定要它在跑。<b>停 robotd 不会卸力</b>。</div>
+    </div>
+    <div class="card">
+      <h2>飞特 USB 调试板（电脑上）</h2>
+      <div class="note">出厂舵机是 1M。OPi 的 UART7 设 1M 实际是 750k，所以新舵机改 ID、改波特率要接这块板子（CH343）。
+        FD 上位机开着会独占串口。</div>
+      <div class="row"><select id="usb-port"></select><button id="usb-open">使用这个串口</button>
+        <button id="usb-ports">刷新列表</button></div>
+      <div id="usb-state" class="muted"></div>
+      <h2>关节映射（配置里的 joint_ids）</h2>
+      <div class="scroll"><table id="ov-joints"></table></div>
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="servo">
+  <details class="guide" open>
+    <summary>教程：新舵机配置、装机后体检、关节映射、常见故障</summary>
+    <h3>A. 新舵机配置：用上面的“批量配置向导”（出厂 ID 1、1M，装进机身之前）</h3>
+    <ol>
+      <li>总览页选好 USB 调试板的串口（列表里标“CH34x”的那个；FD 上位机要先关）。给调试板接舵机电源：<b>HD-1910 用 2S，千万别接 3S</b>；HL-2915 用 3S。</li>
+      <li>向导里选舵机型号，它决定卸载条件和电流单位：HD-1910 写 5（0x05）、0.65 mA/格；HL-2915 写 13（0x0d）、6.5 mA/格。</li>
+      <li>选接法：
+        <ul>
+          <li><b>串成链</b>（推荐）：ID 顺序填 <code>15-1</code>。新舵机都是 ID 1，倒着分配号码，就能保证链上任何时刻只有刚接上的那一只是 ID 1，已配好的不用拔（同 <code>tools/servo/setup_ids.py</code>）。</li>
+          <li><b>每只单独接</b>：ID 顺序随意，例如 <code>1-15</code>；每配完一只就拔掉。</li>
+        </ul></li>
+      <li>点<kbd>开始</kbd>，然后每一只都按提示做：
+        <ol>
+          <li>接上舵机，点<kbd>接好了，检测</kbd>。向导会在 1M 和 500k 上找 ID 1。</li>
+          <li>找到后自动配置：改 ID；限位写 0/4095；模式写 0（HD-1910 出厂是 4）；写卸载条件；改成 500k，上锁；最后读回核对。</li>
+          <li><b>第一只</b>会让你断电重上电，确认配置真的存进了 EEPROM。</li>
+          <li><kbd>回中并保持</kbd>：舵机转到 2048 并保持扭矩。这时把舵盘按中立位装上，再点<kbd>舵盘装好了，松扭矩</kbd>。</li>
+        </ol></li>
+      <li>中途断了也不要紧，重新点<kbd>开始</kbd>即可：已经改过号的舵机会被认出来（“ID n 上已有舵机”），原地重配，不会撞号。</li>
+      <li>全部做完后点<kbd>核对整链</kbd>，在 500k 上扫一遍。</li>
+      <li>检测时可能遇到的提示：
+        <ul>
+          <li>“多只同时应答”：链上新接了不止一只，或者有两只都是 ID 1，多出来的那只要拔掉；</li>
+          <li>“之前配好的 ID 不应答”：链上有地方松了；</li>
+          <li>“没找到”：查电源、3 芯线方向、插头有没有插到位。</li>
+        </ul></li>
+    </ol>
+    <p>手动做也可以：在下面扫描，点一行，用“改 ID / 改波特率 / 回中”按钮，在寄存器表里改 33、9/11、19。输入框里都填十进制。<b>回中只用于还没装进关节的舵机</b>，装进关节后再回中，会把关节拧到中位。</p>
+    <h3>B. 装进机身后的体检（机器人总线）</h3>
+    <ol>
+      <li>总览页停掉 robotd。总线选“机器人”，波特率 500k，ID 0–20，勾上“含 200”，点<kbd>扫描</kbd>。应该看到 15 只舵机和 IMU 板（200）。</li>
+      <li>重点看三处红字：
+        <ul>
+          <li><b>位置红</b>：读数超出 0..4095，是多圈计数（关节被掰过了头）。重启 OPi 清不掉，<b>要给舵机断电</b>。在这之前工具拒绝给它上扭矩。如果断电后关节摆到零位时的读数仍然靠近 0 或 4095，就用下面 D 的“当前位置设为中位”把跳变点挪走。</li>
+          <li><b>状态非 0</b>：舵机报了过压、欠压、过热或过流，看电池和温度。</li>
+          <li><b>缺 ID</b>：先查那一路的线和插座（PDB 插座焊完要清洗助焊膏，残留会导电），再查是不是 ID 撞了。</li>
+        </ul></li>
+      <li>电压列可以顺便看电池：2S 满电约 8.4 V，3S 约 12.6 V。</li>
+    </ol>
+    <h3>C. 关节映射：装的时候没按 ID 顺序装</h3>
+    <ol>
+      <li><b>机器人平躺或托在手里、腿悬空</b>。接机器人总线（先停 robotd）或者 USB 调试板（接到机器人的舵机总线上；主控开着的话 robotd 同样要停），下面“总线 / 波特率”选好（装好的一般是 500k），舵机型号选对（决定电流单位和限流）。</li>
+      <li>点<kbd>扫描并开始</kbd>：扫 ID 0–39，然后从最小的 ID 开始摆 ±8°。看哪个关节动了，在关节表里点它，下一只自动开始摆。没看清点<kbd>再摆一次</kbd>；点错了就点上面那只的 ID 标签，重摆后点正确的关节（原来占着那个关节的 ID 会退回待认）。点到一半刷新页面也不丢。</li>
+      <li>15 个点完后点<kbd>左右对照核对</kbd>：两腿同名关节先左后右各摆一次，颈、头、嘴逐个摆，正在摆的关节按钮会框出来。<b>左右最容易看反</b>（小白标定时单看一只看错过四次），这一步别省。</li>
+      <li>然后二选一：
+        <ul>
+          <li><b>A. 改 ID 对号</b>：选目标顺序（关节顺序 1–15、同小白、配置里现有的、或自定义），点<kbd>改 ID</kbd>。会先把要改的舵机全部挪到临时号 160 + 新 ID，再落到新 ID，所以两只互换也行。万一中途断了，扫描时看到 16x / 17x 的就是临时号，减 160 就是它该去的 ID。改完把新顺序写进配置（在机器人总线上做的可以直接点按钮写）。</li>
+          <li><b>B. 不改 ID</b>：把显示的 <code>joint_ids = [...]</code> 写进机器人配置（先备份成 <code>.bak-时间</code>）。在 USB 调试板上做的，就把那一行抄进 toml 的 <code>[bus]</code>。</li>
+        </ul>
+        写完都要重启 robotd 才生效。<code>joint_signs</code> / <code>joint_offsets</code> 是按关节存的，和 ID 无关，映射之后照常去零位标定页标。</li>
+    </ol>
+    <h3>C2. 单只摆动测试</h3>
+    <ol>
+      <li><b>机器人托在手里或平躺，腿悬空不受力。</b>点一行，限流默认 400 mA、摆幅 ±6°，点<kbd>摆动测试</kbd>，在弹窗里确认。</li>
+      <li>看实机哪个关节动了，和“关节”列对一下。整台对不上用上面的“关节映射”卡片；只差一两只也可以在这里改 ID 互换。小黑的颈 pitch 和头 pitch 就是靠这一步找出来、和小白反过来的。</li>
+      <li>结果里的“目标 → 实际（误差）”应在 ±2.5° 以内。下方小图里蓝线是位置、橙线是电流。到不了位：先看 44（目标电流）和 46（速度）是否被写成 0，再看是不是机械卡住。</li>
+      <li>方向（正转是哪边）不在这里看，到零位标定页逐个关节核对。</li>
+    </ol>
+    <h3>D. 当前位置设为中位（舵机自带的位置校正，EEPROM 31）</h3>
+    <ul>
+      <li>作用：把舵机<b>现在的位置记成 2048</b>，以后读数 = 原始读数 − 偏置（mod 4096）。读数在 0 / 4095 之间的跳变点会被挪到输出轴背面，目标位置也会跟着一起平移。</li>
+      <li>用途：舵盘没对着中位装的舵机，或者装好后关节零位的读数靠近 0 / 4095 的舵机（像小黑头 roll 读到 4140 那种），<b>不用拆舵盘</b>：关掉扭矩，用手把关节摆到零位，点一行，再点<kbd>当前位置设为中位</kbd>。</li>
+      <li>代价：已经标过零位的关节，这一只的 <code>joint_offsets</code> 作废，要到零位标定页重标（重标后这一只的偏置应接近 0）。</li>
+      <li>实测（10-31，HL-2915，固件 3.45）：写 31 后断电仍在；手转过原来的跳变点读数连续；回中和摆动都按新坐标到位。STS 系列的“写 40 = 128”一键校正在它上面<b>没反应</b>。HD-1910 还没测过，第一次用先拿一只备用舵机在台架上试。</li>
+    </ul>
+    <h3>E. 常见故障</h3>
+    <ul>
+      <li><b>上了扭矩但纹丝不动、电流 0</b>：44（目标电流）或 46（速度）是 0。HD-1910 有时还会“零电流卡住”，重写 46 就能动。工具每次写目标都会把 42..47 一起写。</li>
+      <li><b>跑着跑着没力、扭矩开关还是 1</b>：过流卸载，把 19 的 bit3 关掉（HD-1910 写 5）。</li>
+      <li><b>电流显示比实际大 10 倍或小 10 倍</b>：上面“电流单位”选错了。HD-1910 是 0.65 mA/格，HL-2915 是 6.5 mA/格。</li>
+      <li><b>改波特率后找不到舵机</b>：给舵机断电重上，再按新波特率扫描。</li>
+    </ul>
+  </details>
+  <div class="card" style="margin-bottom:16px">
+    <h2>新舵机批量配置向导（USB 调试板）</h2>
+    <div class="muted">一只一只接上：改 ID、配 EEPROM、改成 500k，再转到 2048 装舵盘（舵机自己的“零位”）。装进机身后的关节零位在“零位标定”页做。</div>
+    <div class="row">
+      <label>舵机 <select id="wz-model"><option value="hd1910">HD-1910（小黑，2S）</option>
+        <option value="hl2915">HL-2915（小白，3S）</option></select></label>
+      <label>接法 <select id="wz-chain"><option value="chain">串成链（ID 倒着分）</option>
+        <option value="isolated">每只单独接</option></select></label>
+      <label>ID 顺序 <input id="wz-ids" value="15-1" style="width:110px" title="如 15-1、1-15、3,4,9"></label>
+      <label>最终波特率 <select id="wz-baud"><option value="500000">500k</option><option value="1000000">1M（不推荐）</option></select></label>
+      <label><input type="checkbox" id="wz-center" checked> 回中装舵盘</label>
+      <label><input type="checkbox" id="wz-verify" checked> 第一只断电验证</label>
+      <label>回中限流 <input id="wz-cur" type="number" value="400"> mA</label>
+    </div>
+    <div class="row"><button id="wz-start" class="primary">开始 / 重新开始</button>
+      <button id="wz-check" disabled>核对整链</button></div>
+    <div id="wz-list" class="row"></div>
+    <div id="wz-step"></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <h2>关节映射（装好以后：哪个 ID 装在哪个关节）</h2>
+    <div class="muted">一只一只摆，看哪个关节动了就点哪个关节。15 个都点完后，可以把舵机的 ID 改成想要的顺序，也可以直接把映射写进配置的 <code>joint_ids</code>。
+      用的是下面“总线 / 波特率”选的那条总线；机器人总线要先停 robotd。左右指<b>机器人自己</b>的左右。</div>
+    <div class="row">
+      <label>舵机 <select id="mp-mpc"><option value="0.65">HD-1910（0.65 mA/格）</option><option value="6.5">HL-2915（6.5 mA/格）</option></select></label>
+      <label>摆幅 ± <input id="mp-amp" type="number" value="8" step="1"> °</label>
+      <label>限流 <input id="mp-cur" type="number" value="400"> mA</label>
+      <label><input type="checkbox" id="mp-auto" checked> 点完自动摆下一只</label>
+      <button id="mp-start" class="primary">扫描并开始</button>
+      <button id="mp-clear">清空映射</button>
+    </div>
+    <div id="mp-ids" class="row"></div>
+    <div id="mp-now"></div>
+    <div id="mp-grid" class="mp-grid"></div>
+    <div id="mp-out"></div>
+  </div>
+  <div class="row">
+    <label>总线 <select id="sv-target"><option value="robot">机器人 /dev/ttyS7</option>
+      <option value="usb">USB 调试板</option></select></label>
+    <label>波特率 <select id="sv-baud">
+      <option value="500000">500k</option><option value="1000000">1M</option><option value="250000">250k</option>
+      <option value="115200">115200</option><option value="all">全部（只 USB）</option></select></label>
+    <label>ID <input id="sv-lo" type="number" value="0" min="0" max="253"> –
+      <input id="sv-hi" type="number" value="20" min="0" max="253"></label>
+    <label><input id="sv-imu" type="checkbox" checked> 含 200（IMU）</label>
+    <label>电流单位 <select id="sv-mpc">
+      <option value="">按配置</option><option value="6.5">HL-2915 6.5 mA/格</option>
+      <option value="0.65">HD-1910 0.65 mA/格</option></select></label>
+    <button id="sv-scan" class="primary">扫描</button>
+  </div>
+  <div class="scroll"><table id="sv-table"></table></div>
+  <div id="sv-detail" style="display:none">
+    <h2 id="sv-title"></h2>
+    <div class="grid2">
+      <div>
+        <div class="row"><button id="sv-reread">重读</button>
+          <label>改 ID → <input id="sv-newid" type="number" min="0" max="252"></label><button id="sv-setid">改 ID</button></div>
+        <div class="row"><label>改波特率 → <select id="sv-newbaud">
+          <option value="500000">500k</option><option value="1000000">1M</option><option value="250000">250k</option>
+          <option value="115200">115200</option></select></label><button id="sv-setbaud">改波特率</button></div>
+        <div class="row"><label>限流 <input id="sv-cur" type="number" value="400"> mA</label>
+          <label>摆幅 ± <input id="sv-amp" type="number" value="6" step="1"> °</label></div>
+        <div class="row">
+          <button id="sv-wiggle" class="primary">摆动测试</button>
+          <button id="sv-center">回中（装舵盘）</button>
+          <button id="sv-ton">上扭矩（保持当前位置）</button>
+          <button id="sv-toff">松扭矩</button>
+          <button id="sv-here" title="写 EEPROM 31（位置校正）">当前位置设为中位</button>
+        </div>
+        <div class="note">摆动：以当前位置为中心 ±摆幅、回原位后松扭矩；跨 0/4095 的一侧跳过；过流（默认 1.5 A）或偏离 15° 立即切扭矩。
+          回中：转到同圈最近的 2048 并保持扭矩，装好舵盘再松——<b>只用于还没装进关节的舵机</b>。读数超出 0..4095（多圈）一律拒绝上扭矩，要断舵机电。</div>
+        <div id="sv-result"></div>
+      </div>
+      <div class="scroll"><table id="sv-regs"></table></div>
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="zero">
+  <details class="guide" open>
+    <summary>教程：零位标定（joint_signs / joint_offsets）</summary>
+    <p>标定页（下面嵌着的就是 <code>tools/joint_align</code>）把实机关节角实时套到训练用的模型上，让你对照模型核方向、记零位。
+      标的结果是 toml <code>[bus]</code> 里的两行：<code>joint_signs</code>（每个关节正转是哪个方向）和 <code>joint_offsets</code>（零位时的编码器读数减 2048）。</p>
+    <h3>准备</h3>
+    <ol>
+      <li>舵机总线体检通过：15 只都应答，没有多圈读数（位置红）。</li>
+      <li>总览页<b>启动 robotd</b>。</li>
+      <li>机器人<b>平躺或托在手里</b>：点<kbd>开始标定</kbd>后全身会卸力。</li>
+    </ol>
+    <h3>第一步：核方向（扭矩关着，用手掰）</h3>
+    <ol>
+      <li>在表格里点一个关节，看第三张图里这个关节的正方向往哪边转。</li>
+      <li>用手把实机的这个关节往同一个方向掰，前两张图里的模型应该同向转，读数变大。</li>
+      <li>方向反了就点这一行的<kbd>反向</kbd>（立即生效），再掰一次确认。</li>
+      <li>15 个关节逐个做一遍。<b>左右成对的关节最好两边同时掰</b>，只掰单只容易看反。嘴没有模型：张嘴时读数应变大。</li>
+    </ol>
+    <h3>第二步：记零位</h3>
+    <ol>
+      <li>“参考”选<kbd>零位</kbd>，照着参考图把机器人摆好（腿伸直、头摆正）。</li>
+      <li>全身摆好后点<kbd>全部设为零位</kbd>，也可以选中某个关节点<kbd>所选关节设为零位</kbd>。嘴要闭到底再设零位。</li>
+      <li>点<kbd>写入配置</kbd>：先备份（<code>*.bak-时间</code>），再改 <span class="zr-config-name"></span> 的这两行，然后重启 robotd。</li>
+    </ol>
+    <h3>第三步：站在 home 上精调</h3>
+    <ol>
+      <li><b>托好机器人</b>，点<kbd>写入并回 home</kbd>：robotd 重启（不断扭矩），机器人平滑地回到站姿 home。</li>
+      <li>放到桌面上，检查以下几点：
+        <ul>
+          <li>脚底贴平；</li>
+          <li>躯干俯仰、横滚接近 0（页面上方有 IMU 读数；用手机水平仪量一下躯干，核对 IMU 准不准）；</li>
+          <li>头和地面平行；</li>
+          <li>脚尖朝正前；</li>
+          <li>左右对称；</li>
+          <li>能自己站住。</li>
+        </ul></li>
+      <li>哪个关节偏了，就点那一行零点两边的<kbd>−</kbd>/<kbd>+</kbd>（每次 0.5°，在同一个指令角下让关节往负 / 正方向多转），再点<kbd>写入并回 home</kbd>看效果。</li>
+      <li>经验（小黑 10-25）：
+        <ul>
+          <li>脚平以后躯干还前倾：按小腿、大腿的实际角度反算髋、膝、踝的修正量。</li>
+          <li>躯干平了却往后倒：脖子和头的后仰角度不对，量一下再修。</li>
+          <li>修完仍往后倒：说明实机重心比模型靠后，要改训练模型，不要再动零位。</li>
+        </ul></li>
+      <li>改过、还没写入的值显示成橙色。<kbd>撤销改动</kbd>回到 robotd 现在用的值。</li>
+    </ol>
+  </details>
+  <div class="note">复用 <code>tools/joint_align</code>：实机关节角实时套到训练模型上渲染；每个关节可"反向"、"设为零位"、±0.5° 精调，
+    "写入配置"会先备份再改机器人上 <span id="zr-config"></span> 的 <code>joint_signs</code> / <code>joint_offsets</code>，
+    然后 <code id="zr-restart"></code>；"写入并回 home"再执行 <code id="zr-init"></code>。<br>
+    需要 robotd 在跑。<b>第一次连上会发 robot.relax（全身卸力）</b>，所以先让机器人躺好或托好。
+    零位参考：大腿、小腿、躯干按页面里的"零位参考"图摆；站在 home 上时脚底贴平、IMU 躯干俯仰≈0。</div>
+  <div class="row"><button id="zr-start" class="primary">开始标定</button><span id="zr-state" class="muted"></span></div>
+  <div id="zr-frame"></div>
+</section>
+
+<section class="tab" id="imu">
+  <details class="guide" open>
+    <summary>教程：给 PDB 上的 IMU 板烧固件</summary>
+    <p>PDB 上的 STM32G031 + LSM6DSV16X 跑 <code>firmware/imu-feetech</code>，在舵机总线上伪装成飞特设备 ID 200（500k），robotd 每拍连同 15 只舵机一起读。
+      新焊的 PDB 出厂是空片，要先烧一次；固件改了也在这里重烧。</p>
+    <h3>接线</h3>
+    <ul>
+      <li>ST-Link 插电脑。<b>第一次用</b>要先用 Zadig 给它装 WinUSB 驱动，否则 probe-rs 找不到。</li>
+      <li>接 PDB 的 J2：1 SWDIO、2 SWCLK、3 GND、4 3V3。PDB 已经由电池或电源供电时，3V3 可以不接。</li>
+      <li>ST-Link 的 10 针座（Zave）：2 SWCLK、4 SWDIO、6 GND。</li>
+    </ul>
+    <h3>步骤</h3>
+    <ol>
+      <li><kbd>1. 构建</kbd>：<code>cargo build --release</code>。左边的“构建产物”会显示是否比源码旧，“未提交改动”不为空时说明烧的不是某个提交的版本。</li>
+      <li><kbd>2. 找 ST-Link</kbd>：<code>probe-rs list</code>，输出里要有一行 ST-Link。显示 “No debug probes were found” 时，查 USB 线和 WinUSB 驱动。</li>
+      <li><kbd>3. 烧录</kbd>：<code>probe-rs download --verify</code> 加 <code>reset</code>。输出最后应该是“完成”。</li>
+      <li><kbd>4. 经总线核对</kbd>（先在总览页停 robotd）：通过的标准：
+        <ul>
+          <li>型号 0x16D6，固件版本和源码一致；</li>
+          <li>融合输出约 120 Hz，标志 = 3；</li>
+          <li>平放静止时陀螺噪声 &lt; 1 dps；</li>
+          <li>俯仰、横滚和机器人的实际姿态吻合。</li>
+        </ul></li>
+    </ol>
+    <h3>烧不进去</h3>
+    <ul>
+      <li>连不上芯片（SWD 读不到、J2 的 SWDIO 是 0 V）：先查 <b>U1 方向</b>，圆点应在左下，第一块 PDB 就是焊反了；再查 PDB 有没有供电、J2 的线序。</li>
+      <li>烧完总线上没有 200：查 PDB 到 HAT 的总线线束；确认 robotd 配置里 <code>[bus] imu = true</code>。IMU 必须排在 SYNC_READ 的最后，robotd 已经是这样排的。</li>
+      <li>俯仰、横滚的轴对不上：IMU 的安装方向由 <code>[bus] imu_axes</code> 决定（小黑、小白都是 <code>"y,x,-z"</code>）。核对方法是把机器人仰躺，看重力落在传感器的哪根轴上。</li>
+    </ul>
+  </details>
+  <div class="grid2">
+    <div class="card">
+      <h2>固件 <code>firmware/imu-feetech</code></h2>
+      <table class="kv" id="fw-info"></table>
+      <div class="note">ST-Link 插电脑，接 PDB 的 J2（1 SWDIO、2 SWCLK、3 GND、4 3V3；PDB 已上电时 3V3 可不接）。
+        Windows 上 ST-Link 要先用 Zadig 装 WinUSB 驱动。新焊的 PDB：U1 圆点在左下，焊反了 SWD 读不到。</div>
+      <div class="row">
+        <button id="fw-build">1. 构建</button>
+        <button id="fw-probe">2. 找 ST-Link</button>
+        <button id="fw-flash" class="primary">3. 烧录</button>
+        <button id="fw-verify">4. 经总线核对</button>
+      </div>
+      <div id="fw-verify-out"></div>
+    </div>
+    <div class="card">
+      <h2 id="job-title">输出</h2>
+      <pre id="job-log" style="min-height:240px"></pre>
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="test">
+  <details class="guide" open>
+    <summary>教程：整机测试怎么做、不通过时查哪里</summary>
+    <h3>准备</h3>
+    <ol>
+      <li>机器人平放、静止（IMU 要测静止时的噪声），旁边安静。</li>
+      <li>总览页<b>停掉 robotd</b>（总线和 IMU 两项要用）；visiond 在跑时摄像头会被占用，也先停掉。</li>
+      <li>点<kbd>全部运行</kbd>按顺序测，也可以单项点<kbd>运行</kbd>。麦克风那一项开始前会弹窗：点确定后<b>对着机器人拍手或说话</b>；喇叭那一项结束后会问你<b>有没有听到“嘀”</b>。</li>
+      <li>点某一行可以看全部读数（ToF 的 8×8 距离图、摄像头缩略图、每只舵机的电压和温度）。测完点<kbd>导出报告（JSON）</kbd>存档。</li>
+    </ol>
+    <h3>不通过时查哪里</h3>
+    <table>
+      <tr><th>项目</th><th>现象</th><th>先查</th></tr>
+      <tr><td rowspan="3">舵机总线</td><td>某个 ID 不应答</td><td>那一路的线和插座、舵机供电；扫描页确认 ID 没撞</td></tr>
+      <tr><td>错误率高（&gt; 0.5%）</td><td>PDB 舵机插座的助焊膏残留（用异丙醇刷洗，量 DATA–GND、DATA–V 的电阻）；接触不良（测试时晃一晃线）；头部 Y 线</td></tr>
+      <tr><td>多圈读数</td><td>给舵机断电再上电</td></tr>
+      <tr><td rowspan="2">IMU</td><td>200 不应答</td><td>还没烧固件（去“IMU 固件”页）；PDB 到 HAT 的线</td></tr>
+      <tr><td>噪声、零偏大</td><td>测试时有没有动；陀螺高频抖说明 IMU 安装处在震，检查固定</td></tr>
+      <tr><td rowspan="3">麦克风</td><td>两路全 0</td><td>i2c-2 被拉死（codec 写不进去）：多半是 ToF 模块短路或插错，拔掉 ToF 重启试；<code>systemctl status aic3104-a733</code></td></tr>
+      <tr><td>直流偏移很大</td><td>HAT 麦克风那一路的焊接（10-25 有一块新 HAT 偏移 −11000）</td></tr>
+      <tr><td>没听到声音</td><td>录音时要拍手或说话；麦克风线</td></tr>
+      <tr><td rowspan="2">喇叭</td><td>麦克风正常，但没录到 1 kHz、人耳也没听到</td><td>HAT 上 codec U6 第 4 脚 DIN 虚焊（拔板，二极管档测 J1 第 7/12/35/38/40 脚，读数应一致，约 0.5–0.8 V；40 脚读 OL 就是 DIN 没焊上）；功放 U8：J6 两孔对地直流应约 2.5 V，是 0 V 时查 U8 方向和焊接</td></tr>
+      <tr><td>只录到一点点</td><td>喇叭线、喇叭本身（用 1.5 V 电池碰一下能响）</td></tr>
+      <tr><td rowspan="2">ToF</td><td>tofd 起不来 / 0 帧</td><td>J5 线序（和模块前 4 脚同序、1:1 同向线）；模块贴片处短路；<code>i2cdetect</code> 看 0x29</td></tr>
+      <tr><td>有效区少、一列恒为 1–2 cm</td><td>前脸开孔挡住了视野；镜头脏</td></tr>
+      <tr><td rowspan="3">摄像头</td><td>没有 vin_video 设备</td><td>驱动没加载：<code>sudo modprobe -a vin_io imx219 vin_v4l2</code>；排线方向</td></tr>
+      <tr><td>被占用</td><td>停掉 visiond</td></tr>
+      <tr><td>全黑或全白</td><td>镜头盖、光线；ISP（duckcam 里自动曝光）是否跑起来</td></tr>
+    </table>
+    <p class="muted">工具从不调用 <code>v4l2-ctl --list-ctrls</code>，这条命令会把板子卡死。</p>
+  </details>
+  <div id="t-warn"></div>
+  <div class="row">
+    <button id="t-all" class="primary">全部运行</button>
+    <button id="t-export">导出报告（JSON）</button>
+    <label>总线轮数 <input id="t-rounds" type="number" value="500"></label>
+    <span class="muted">总线和 IMU 两项要先停 robotd；摄像头要先停 visiond。</span>
+  </div>
+  <div class="scroll"><table id="t-table"></table></div>
+  <div id="t-detail"></div>
+</section>
+</main>
+<div id="log"></div>
+
+<script>
+const JOINTS = ["left_hip_yaw","left_hip_roll","left_hip_pitch","left_knee","left_ankle",
+  "neck_pitch","head_pitch","head_yaw","head_roll","mouth",
+  "right_hip_yaw","right_hip_roll","right_hip_pitch","right_knee","right_ankle"];
+const JOINT_CN = ["左髋 偏航","左髋 横滚","左髋 俯仰","左膝","左踝","颈 俯仰","头 俯仰","头 偏航","头 横滚","嘴",
+  "右髋 偏航","右髋 横滚","右髋 俯仰","右膝","右踝"];
+const BAUD_NAME = ["1M","500k","250k","128k","115200","76800","57600","38400"];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let INFO = {}, HELLO = null, SEL = null;
+
+function toast(msg, err) {
+  const d = document.createElement("div");
+  d.className = err ? "err" : ""; d.textContent = msg; $("log").appendChild(d);
+  setTimeout(() => d.remove(), err ? 12000 : 5000);
+}
+async function post(path, body) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body || {})});
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || "失败");
+  return j;
+}
+async function call(op, args, target, timeout) {
+  return (await post("/api/call", {op, args: args || {}, target: target || "robot", timeout})).result;
+}
+async function busy(btn, fn) {
+  const old = btn.textContent; btn.disabled = true; btn.textContent = old + "…";
+  try { return await fn(); } catch (e) { toast(e.message, true); } finally { btn.disabled = false; btn.textContent = old; }
+}
+function motionOK(what) {
+  return confirm("⚠ " + what + "\n\n舵机会动 / 上扭矩。机器人托好了、周围安全吗？");
+}
+function jointOf(id) {
+  const ids = HELLO?.bus?.joint_ids || [];
+  const i = ids.indexOf(id);
+  if (id === 200) return "IMU 板";
+  return i >= 0 ? JOINT_CN[i] : "";
+}
+function mpcArg() { const v = $("sv-mpc").value; return v ? {ma_per_count: +v} : {}; }
+
+// ---- 页签 ---------------------------------------------------------------------------------
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("on", s.id === b.dataset.tab));
+  if (b.dataset.tab === "imu") loadFw();
+});
+
+// ---- 总览 ---------------------------------------------------------------------------------
+async function refresh() {
+  $("conn").textContent = "连接 " + INFO.host + " …";
+  try {
+    HELLO = await call("hello");
+  } catch (e) {
+    $("conn").innerHTML = `<span class="red">${esc(INFO.host)} 连不上</span>`;
+    toast(e.message, true); return;
+  }
+  const h = HELLO, b = h.bus || {};
+  $("conn").textContent = `${h.hostname}（${INFO.host}）· robotd ${h.robotd_pids?.length ? "运行中" : "未运行"}`;
+  const rows = [["主机名", h.hostname], ["Python", h.python], ["舵机串口", `${h.port} @ ${h.baud}` + (h.port_exists ? "" : "（不存在！）")],
+    ["配置", h.config_found ? h.config_path : `<span class="red">没有 ${esc(h.config_path)}</span>`],
+    ["舵机/电流单位", `${b.servo ?? "?"} · ${b.current_ma_per_count ?? 6.5} mA/格`],
+    ["IMU", b.imu ? `开（imu_axes ${b.imu_axes ?? "默认 z,y,-x"}）` : "配置里关着"],
+    ["电池", h.battery ? JSON.stringify(h.battery) : "—"],
+    ["在跑的服务", (h.services || []).join(" ") || "—"]];
+  $("ov-robot").innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+  $("ov-robotd").innerHTML = h.robotd_pids?.length
+    ? `运行中，PID <b>${h.robotd_pids.join(", ")}</b>；单元 ${esc(h.robotd_unit)} = ${esc(h.robotd_unit_state)}`
+    : `没在跑（单元 ${esc(h.robotd_unit)} = ${esc(h.robotd_unit_state)}）`;
+  const ids = b.joint_ids || [];
+  $("ov-joints").innerHTML = "<tr><th>关节</th><th>ID</th><th>sign</th><th>offset</th></tr>" +
+    JOINTS.map((n, i) => `<tr><td>${JOINT_CN[i]}</td><td>${ids[i] ?? "—"}</td><td>${(b.joint_signs || [])[i] ?? ""}</td><td>${(b.joint_offsets || [])[i] ?? ""}</td></tr>`).join("");
+  testWarn();
+}
+$("ov-refresh").onclick = e => busy(e.target, refresh);
+$("ov-reconnect").onclick = e => busy(e.target, async () => { await post("/api/agent/restart", {target: "robot"}); await refresh(); });
+$("rd-stop").onclick = e => busy(e.target, async () => {
+  if (!HELLO?.robotd_pids?.length) return toast("robotd 没在跑");
+  if (!confirm(`停止 robotd（PID ${HELLO.robotd_pids.join(", ")}）？\n\n停 robotd 不会卸力：站着的机器人会保持当前扭矩，但不再有人控制它。`)) return;
+  const r = await call("robotd_stop", {pid: HELLO.robotd_pids[0]}); toast(r.msg); await refresh();
+});
+$("rd-start").onclick = e => busy(e.target, async () => { const r = await call("robotd_start"); toast(r.msg); await refresh(); });
+$("estop").onclick = async () => {
+  for (const t of ["robot"].concat(INFO.com ? ["usb"] : [])) {
+    try { const r = await call("relax_all", {}, t, 15); toast(`${t === "robot" ? "机器人" : "USB"}：${r.msg}`); }
+    catch (e) { toast(`${t}：${e.message}`, true); }
+  }
+};
+async function loadPorts() {
+  const r = await (await fetch("/api/usb/ports")).json();
+  $("usb-port").innerHTML = `<option value="">（不用）</option>` + r.ports.map(p =>
+    `<option value="${esc(p.device)}" ${p.device === r.current ? "selected" : ""}>${esc(p.device)} ${esc(p.desc)}${p.vid === 0x1A86 ? " ← CH34x" : ""}</option>`).join("");
+  $("usb-state").textContent = r.current ? `当前：${r.current}` : "当前没用 USB 调试板";
+}
+$("usb-ports").onclick = loadPorts;
+$("usb-open").onclick = e => busy(e.target, async () => {
+  const r = await post("/api/usb/open", {port: $("usb-port").value}); INFO.com = r.port; await loadPorts();
+});
+
+// ---- 舵机 ---------------------------------------------------------------------------------
+function svBaud() { return $("sv-baud").value === "all" ? 500000 : +$("sv-baud").value; }
+function svArgs(extra) { return Object.assign({baud: SEL?.baud ?? svBaud()}, mpcArg(), extra || {}); }
+function svCall(op, args, timeout) { return call(op, svArgs(args), $("sv-target").value, timeout); }
+
+$("sv-target").onchange = () => { $("sv-baud").value = $("sv-target").value === "usb" ? "1000000" : "500000"; };
+$("sv-scan").onclick = e => busy(e.target, async () => {
+  const usb = $("sv-target").value === "usb";
+  const all = $("sv-baud").value === "all";
+  if (all && !usb) return toast("机器人总线上只扫一个波特率（1M 在 OPi 上实际 750k）", true);
+  const args = Object.assign({lo: +$("sv-lo").value, hi: +$("sv-hi").value}, mpcArg(),
+    all ? {bauds: [1000000, 500000, 250000, 115200]} : {baud: svBaud()});
+  const r = await call("scan", args, $("sv-target").value, 180);
+  let found = r.found;
+  if ($("sv-imu").checked && !usb && !all && args.hi < 200) {
+    try { const r2 = await call("scan", Object.assign({}, args, {lo: 200, hi: 200}), "robot"); found = found.concat(r2.found); } catch (e) {}
+  }
+  renderScan(found);
+  toast(`找到 ${found.length} 个设备`);
+});
+function renderScan(found) {
+  $("sv-table").innerHTML = `<tr><th>ID</th><th>关节</th><th>波特率</th><th>型号</th><th>固件</th><th>模式</th><th>卸载</th>
+    <th>限位</th><th>P/D</th><th>位置</th><th>电压</th><th>温度</th><th>状态</th><th>扭矩</th><th>电流</th><th>44 / 46</th></tr>` +
+    found.map((s, k) => s.imu
+      ? `<tr><td>${s.id}</td><td>IMU 板</td><td>${s.baud}</td><td>0x${(s.model ?? 0).toString(16)}</td><td>${s.fw}</td><td colspan="11" class="muted">到"整机测试 → IMU"看读数</td></tr>`
+      : `<tr class="click" data-k="${k}"><td><b>${s.id}</b></td><td>${jointOf(s.id)}</td><td>${s.baud}</td><td>${s.model}</td><td>${s.fw}</td>
+      <td>${s.mode}</td><td>0x${(s.unload ?? 0).toString(16).padStart(2, "0")}</td><td>${s.limits.join("/")}</td><td>${s.p}/${s.d}</td>
+      <td class="${s.multi_turn ? "red" : ""}" title="${s.multi_turn ? "多圈计数：断舵机电才清" : ""}">${s.pos}</td>
+      <td>${s.volt ?? ""} V</td><td>${s.temp ?? ""} °C</td><td class="${s.status ? "red" : ""}">${s.status}</td>
+      <td>${s.torque}</td><td>${s.curr_ma ?? ""} mA</td><td>${s.goal_curr_ma ?? ""} mA / ${s.speed ?? ""}</td></tr>`).join("");
+  document.querySelectorAll("#sv-table tr.click").forEach(tr => tr.onclick = () => {
+    document.querySelectorAll("#sv-table tr").forEach(x => x.classList.remove("sel")); tr.classList.add("sel");
+    const s = found[+tr.dataset.k]; SEL = {id: s.id, baud: s.baud}; openServo();
+  });
+}
+async function openServo() {
+  $("sv-detail").style.display = ""; $("sv-result").innerHTML = "";
+  $("sv-title").textContent = `ID ${SEL.id} ${jointOf(SEL.id)} · ${SEL.baud} bps · ${$("sv-target").value === "usb" ? "USB 调试板" : "机器人总线"}`;
+  $("sv-newid").value = SEL.id;
+  try {
+    const r = await svCall("read_regs", {id: SEL.id});
+    $("sv-regs").innerHTML = `<tr><th>地址</th><th>名称</th><th>值</th><th></th></tr>` + r.regs.map(g => {
+      const ed = g.kind !== "ro" && g.addr !== 5 && g.addr !== 6;
+      return `<tr><td>${g.addr}</td><td>${esc(g.name)}${g.kind === "ee" ? ' <span class="muted">EEPROM</span>' : ""}</td>
+        <td><b>${g.value ?? "—"}</b></td><td>${ed ? `<input type="number" id="reg-${g.addr}" value="${g.value ?? ""}"> <button data-a="${g.addr}" data-k="${g.kind}">写</button>` : ""}</td></tr>`;
+    }).join("");
+    document.querySelectorAll("#sv-regs button").forEach(b => b.onclick = () => busy(b, async () => {
+      const addr = +b.dataset.a, value = +$("reg-" + addr).value;
+      if ((addr === 40 && value === 1) || addr === 42 || addr === 41 || addr === 44 || addr === 46) {
+        if (!motionOK(`ID ${SEL.id} 写 ${addr} = ${value}`)) return;
+      } else if (!confirm(`ID ${SEL.id} 地址 ${addr} 写 ${value}${b.dataset.k === "ee" ? "（EEPROM，掉电保存）" : ""}？`)) return;
+      const w = await svCall("write_reg", {id: SEL.id, addr, value});
+      toast(`ID ${SEL.id} [${addr}] 读回 ${w.readback}`); await openServo();
+    }));
+  } catch (e) { toast(e.message, true); }
+}
+$("sv-reread").onclick = e => busy(e.target, openServo);
+$("sv-setid").onclick = e => busy(e.target, async () => {
+  const n = +$("sv-newid").value;
+  if (!confirm(`ID ${SEL.id} 改成 ${n}？（写 EEPROM）`)) return;
+  const r = await svCall("set_id", {id: SEL.id, new_id: n}); toast(r.msg); SEL.id = r.id; $("sv-scan").click();
+});
+$("sv-setbaud").onclick = e => busy(e.target, async () => {
+  const to = +$("sv-newbaud").value;
+  if (!confirm(`ID ${SEL.id} 波特率改成 ${to}？（写 EEPROM）`)) return;
+  const r = await svCall("set_baud", {id: SEL.id, to}); toast(r.msg, !r.ok);
+});
+function traceSvg(trace) {
+  if (!trace?.length) return "";
+  const ps = trace.map(t => t[1]), lo = Math.min(...ps), hi = Math.max(...ps), T = trace[trace.length - 1][0] || 1;
+  const pts = trace.map(t => `${(t[0] / T * 500 + 10).toFixed(1)},${(100 - (t[1] - lo) / Math.max(1, hi - lo) * 90).toFixed(1)}`).join(" ");
+  const mx = Math.max(1, ...trace.map(t => t[2]));
+  const cur = trace.map(t => `${(t[0] / T * 500 + 10).toFixed(1)},${(105 - t[2] / mx * 40).toFixed(1)}`).join(" ");
+  return `<svg class="trace" viewBox="0 0 520 110"><polyline points="${cur}" fill="none" stroke="#f59e0b" stroke-width="1"/>
+    <polyline points="${pts}" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="12" y="12" font-size="10" fill="#888">位置 ${lo}–${hi}（蓝）· 电流 ≤${mx} mA（橙）</text></svg>`;
+}
+$("sv-wiggle").onclick = e => busy(e.target, async () => {
+  if (!motionOK(`ID ${SEL.id}（${jointOf(SEL.id) || "?"}）摆动 ±${$("sv-amp").value}°`)) return;
+  const r = await svCall("wiggle", {id: SEL.id, amp_deg: +$("sv-amp").value, current_ma: +$("sv-cur").value}, 30);
+  $("sv-result").innerHTML = `<div class="note ${r.ok ? "" : "warn"}">${esc(r.msg)} · 峰值电流 ${r.peak_ma} mA ·
+    ${r.reached.map(x => `目标 ${x.target} → ${x.pos}（${x.err_deg}°）`).join("，")}${r.skipped_sides ? ` · 跳过 ${r.skipped_sides} 侧（会跨 0/4095）` : ""}</div>` + traceSvg(r.trace);
+});
+$("sv-center").onclick = e => busy(e.target, async () => {
+  if (!motionOK(`ID ${SEL.id} 转到中位并保持扭矩（只用于还没装进关节的舵机）`)) return;
+  const r = await svCall("center", {id: SEL.id, current_ma: +$("sv-cur").value}, 30);
+  $("sv-result").innerHTML = `<div class="note ${r.ok ? "" : "warn"}">${esc(r.msg)}</div>`;
+});
+$("sv-ton").onclick = e => busy(e.target, async () => {
+  if (!motionOK(`ID ${SEL.id} 上扭矩、保持当前位置（限流 ${$("sv-cur").value} mA）`)) return;
+  const r = await svCall("torque", {id: SEL.id, on: 1, current_ma: +$("sv-cur").value}); toast(r.msg);
+});
+$("sv-here").onclick = e => busy(e.target, async () => {
+  if (!confirm(`把 ID ${SEL.id} 现在的位置记成 2048（写 EEPROM 31 位置校正）？\n\n` +
+    "· 先松扭矩，再改偏置；0/4095 的跳变点会挪到对面（输出轴背面）。\n" +
+    "· 已经装在机器人上、标过零位的关节：这一只的 joint_offsets 会作废，改完要到零位标定页重标。\n" +
+    "· 2026-10-31 只在 HL-2915 上实测过；HD-1910 第一次用先在台架上试。")) return;
+  const r = await svCall("set_center_here", {id: SEL.id});
+  $("sv-result").innerHTML = `<div class="note ${r.ok ? "" : "warn"}">${esc(r.msg)}（原读数 ${r.pos_before}）</div>`;
+  await openServo();
+});
+$("sv-toff").onclick = e => busy(e.target, async () => { const r = await svCall("torque", {id: SEL.id, on: 0}); toast(r.msg); });
+
+// ---- 关节映射（装机后） ------------------------------------------------------------------
+// MP.map[j] = 关节 j（JOINTS 顺序）上的舵机 ID；MP.cur = 正在辨认的 ID。存 localStorage，刷新不丢。
+const XIAOBAI_IDS = [8, 11, 6, 7, 15, 4, 3, 5, 2, 1, 9, 10, 12, 13, 14];
+let MP = {ids: [], map: Array(15).fill(null), cur: null, target: "usb", baud: 500000, multi: []};
+let MP_OK = false, MP_STOP = false;
+try { const v = JSON.parse(localStorage.getItem("mp-state")); if (v?.map?.length === 15) MP = Object.assign(MP, v, {cur: null}); } catch (e) {}
+function mpSave() { try { localStorage.setItem("mp-state", JSON.stringify(MP)); } catch (e) {} }
+function mpFree() { return MP.ids.filter(id => !MP.map.includes(id) && !MP.multi.includes(id)); }
+function mpNext(after) {
+  const free = mpFree(); if (!free.length) return null;
+  const k = MP.ids.indexOf(after);
+  return free.find(id => MP.ids.indexOf(id) > k) ?? free[0];
+}
+function mpArgs(extra) {
+  return Object.assign({baud: MP.baud, ma_per_count: +$("mp-mpc").value, amp_deg: +$("mp-amp").value,
+    current_ma: +$("mp-cur").value}, extra || {});
+}
+function mpNow(html, warn) { $("mp-now").innerHTML = html ? `<div class="note ${warn ? "warn" : ""}">${html}</div>` : ""; }
+function mpRender(msg, warn) {
+  $("mp-ids").innerHTML = MP.ids.length ? "舵机：" + MP.ids.map(id => {
+    const j = MP.map.indexOf(id), multi = MP.multi.includes(id);
+    const cls = id === MP.cur ? "b-run" : multi ? "b-bad" : j >= 0 ? "b-ok" : "b-none";
+    const tip = multi ? "多圈读数：断舵机电再上电后重新扫描" : "点一下：摆它，再点它对应的关节";
+    return `<span class="badge click ${cls}" data-id="${id}" title="${tip}">ID ${id}${j >= 0 ? " · " + JOINT_CN[j] : ""}</span>`;
+  }).join(" ") + ` <span class="muted">（${MP.target === "usb" ? "USB 调试板" : "机器人总线"} ${MP.baud}）</span>` : "";
+  document.querySelectorAll("#mp-ids .badge").forEach(b => b.onclick = () => mpPick(+b.dataset.id));
+  if (msg !== undefined) mpNow(msg, warn);
+  const col = (title, idx) => `<div><h4>${title}</h4>` + idx.map(j =>
+    `<button data-j="${j}" class="${MP.map[j] != null ? "set" : ""}"><span>${JOINT_CN[j]}</span><b>${MP.map[j] ?? ""}</b></button>`).join("") + "</div>";
+  $("mp-grid").innerHTML = MP.ids.length ? col("左腿", [0, 1, 2, 3, 4]) + col("颈 / 头 / 嘴", [5, 6, 7, 8, 9]) + col("右腿", [10, 11, 12, 13, 14]) : "";
+  document.querySelectorAll("#mp-grid button").forEach(b => b.onclick = () => mpAssign(+b.dataset.j));
+  mpOut(); mpSave();
+}
+async function mpWiggle(id, label) {
+  if (!MP_OK && !motionOK(`关节映射：逐只摆动 ±${$("mp-amp").value}°（限流 ${$("mp-cur").value} mA）。机器人要平躺或托在手里、腿悬空`)) return null;
+  MP_OK = true;
+  mpNow(`正在摆 <b>ID ${id}</b>${label ? "（" + esc(label) + "）" : ""}……看哪个关节在动`);
+  try { return await call("wiggle", mpArgs({id}), MP.target, 30); }
+  catch (e) { mpNow(`ID ${id}：${esc(e.message)}`, true); return null; }
+}
+async function mpPick(id) {
+  if (MP.multi.includes(id)) return toast(`ID ${id} 读数是多圈计数，断舵机电再上电后重新扫描`, true);
+  MP.cur = id; mpRender();
+  const r = await mpWiggle(id);
+  if (!r || MP.cur !== id) return;
+  const j = MP.map.indexOf(id);
+  mpNow(`<b>ID ${id}</b> 摆完了（${esc(r.msg)}，峰值 ${r.peak_ma} mA）。` +
+    (j >= 0 ? `现在记的是 <b>${JOINT_CN[j]}</b>；不对就点正确的关节。` : `<b>哪个关节动了？</b>在下面点它。`) +
+    ` <button id="mp-again">再摆一次</button> <button id="mp-skip">先跳过</button>`, !r.ok);
+  $("mp-again").onclick = () => mpPick(id);
+  $("mp-skip").onclick = () => {
+    const n = mpNext(id); MP.cur = n === id ? null : n; mpRender("");
+    if (MP.cur != null && $("mp-auto").checked) mpPick(MP.cur);
+  };
+}
+async function mpAssign(j) {
+  if (MP.cur == null) {  // 没在辨认时，点关节 = 把它摆一下核对
+    if (MP.map[j] == null) return toast("这个关节还没有对上 ID；先点上面一个灰色的 ID 摆它");
+    const r = await mpWiggle(MP.map[j], JOINT_CN[j]);
+    if (r) mpNow(`摆的是 <b>${JOINT_CN[j]}</b>（ID ${MP.map[j]}）：${esc(r.msg)}。动的不是它的话，点上面的 ID 重新指定。`, !r.ok);
+    return;
+  }
+  const id = MP.cur, was = MP.map[j];
+  MP.map = MP.map.map(x => x === id ? null : x); MP.map[j] = id;
+  MP.cur = mpNext(id);
+  mpRender(`ID ${id} → <b>${JOINT_CN[j]}</b>` + (was != null && was !== id ? `；原来记在这里的 ID ${was} 退回待认` : ""));
+  if (MP.cur != null && $("mp-auto").checked) await mpPick(MP.cur);
+  else if (MP.cur != null) mpRender(`下一只：ID ${MP.cur}，点上面的橙色标签摆它`);
+}
+function mpTemplate() {
+  const v = $("mp-tpl")?.value || "seq";
+  if (v === "seq") return [...Array(15).keys()].map(i => i + 1);
+  if (v === "xiaobai") return XIAOBAI_IDS.slice();
+  if (v === "config") return (HELLO?.bus?.joint_ids || []).map(Number);
+  return parseIds($("mp-custom").value);
+}
+function mpOut() {
+  const n = MP.map.filter(x => x != null).length;
+  if (!MP.ids.length) { $("mp-out").innerHTML = ""; return; }
+  if (n < 15) { $("mp-out").innerHTML = `<div class="muted">已对上 ${n} / 15。</div>`; return; }
+  const cfgIds = HELLO?.bus?.joint_ids || [];
+  const keep = $("mp-tpl")?.value || "seq", custom = $("mp-custom")?.value || "";
+  const canWrite = MP.target === "robot" && HELLO?.config_found;
+  $("mp-out").innerHTML = `<div class="note">15 个关节都对上了。按舵机现在的 ID，配置应写：<br><code>joint_ids = [${MP.map.join(", ")}]</code></div>
+    <div class="row"><button id="mp-check">左右对照核对</button><button id="mp-stop">停止核对</button>
+      <span class="muted">两腿同名关节先左后右各摆一次，再逐个摆颈、头、嘴；正在摆的关节按钮会框出来。</span></div>
+    <h2>然后二选一</h2>
+    <div class="row"><b>A. 改舵机 ID，按这个顺序：</b>
+      <select id="mp-tpl"><option value="seq">关节顺序 1–15（左腿 1–5，颈头嘴 6–10，右腿 11–15）</option>
+        <option value="xiaobai">同小白 [${XIAOBAI_IDS.join(", ")}]</option>
+        ${cfgIds.length === 15 ? `<option value="config">配置里现有的 [${cfgIds.join(", ")}]</option>` : ""}
+        <option value="custom">自定义</option></select>
+      <input id="mp-custom" placeholder="15 个，按关节顺序，如 1-15" style="width:220px;display:none">
+      <button id="mp-remap" class="primary">改 ID</button></div>
+    <div id="mp-plan" class="muted"></div>
+    <div class="row"><b>B. 不改 ID，</b><button id="mp-write" ${canWrite ? "" : "disabled"}>把上面这行写进机器人配置</button>
+      <span class="muted">${canWrite ? esc(HELLO.config_path) + "（先备份）" : "要在机器人总线上做映射、而且机器人上有配置文件才能写；否则把上面那行抄进 toml 的 [bus]"}</span></div>
+    <div id="mp-res"></div>`;
+  $("mp-tpl").value = [...$("mp-tpl").options].some(o => o.value === keep) ? keep : "seq";
+  $("mp-custom").value = custom;
+  const plan = () => {
+    $("mp-custom").style.display = $("mp-tpl").value === "custom" ? "" : "none";
+    const t = mpTemplate();
+    if (t.length !== 15 || new Set(t).size !== 15) { $("mp-plan").textContent = "目标要 15 个互不相同的 ID"; return; }
+    const mv = MP.map.map((id, j) => [id, t[j], j]).filter(m => m[0] !== m[1]);
+    $("mp-plan").textContent = mv.length ? `要改 ${mv.length} 只：` + mv.map(m => `${JOINT_CN[m[2]]} ${m[0]}→${m[1]}`).join("，") : "已经是这个顺序，不用改";
+  };
+  $("mp-tpl").onchange = plan; $("mp-custom").oninput = plan; plan();
+  $("mp-check").onclick = e => busy(e.target, mpCheck);
+  $("mp-stop").onclick = () => { MP_STOP = true; };
+  $("mp-remap").onclick = e => busy(e.target, mpRemap);
+  $("mp-write").onclick = e => busy(e.target, () => mpWrite(MP.map.slice()));
+}
+async function mpCheck() {
+  MP_STOP = false;
+  const seq = [];
+  for (let k = 0; k < 5; k++) seq.push(k, k + 10);
+  for (let k = 5; k < 10; k++) seq.push(k);
+  let done = true;
+  for (const j of seq) {
+    if (MP_STOP) { done = false; mpNow("核对停了"); break; }
+    document.querySelectorAll("#mp-grid button").forEach(b => b.classList.toggle("chk", +b.dataset.j === j));
+    const r = await mpWiggle(MP.map[j], JOINT_CN[j]);
+    if (!r || !r.ok) { done = false; if (r) mpNow(`<b>${JOINT_CN[j]}</b>（ID ${MP.map[j]}）：${esc(r.msg)}`, true); break; }
+  }
+  document.querySelectorAll("#mp-grid button.chk").forEach(b => b.classList.remove("chk"));
+  if (done) mpNow("核对摆完了。每次动的都是框出来的那个关节、左右没反，就对了；有不对的，点上面的 ID 重新指定。");
+}
+async function mpRemap() {
+  const t = mpTemplate();
+  if (t.length !== 15 || new Set(t).size !== 15) return toast("目标要 15 个互不相同的 ID", true);
+  const moves = MP.map.map((id, j) => [id, t[j]]).filter(m => m[0] !== m[1]);
+  if (!moves.length) return toast("已经是这个顺序，不用改");
+  if (!confirm(`改 ${moves.length} 只舵机的 ID（写 EEPROM）：\n${moves.map(m => m[0] + "→" + m[1]).join("  ")}\n\n先全部挪到临时号（160 + 新 ID），再落到新 ID。中途别断电。`)) return;
+  const r = await call("remap_ids", {baud: MP.baud, moves}, MP.target, 90);
+  MP.ids = MP.ids.map(id => { const m = moves.find(x => x[0] === id); return m ? m[1] : id; }).sort((a, b) => a - b);
+  MP.map = t.slice(); MP.cur = null; mpRender("");
+  $("mp-res").innerHTML = `<div class="note">${esc(r.msg)}。现在配置应写 <code>joint_ids = [${t.join(", ")}]</code>
+    ${MP.target === "robot" && HELLO?.config_found ? `<button id="mp-write2">写进机器人配置</button>` : "（接回机器人后写进 toml 的 [bus]）"}</div>`;
+  if ($("mp-write2")) $("mp-write2").onclick = e => busy(e.target, () => mpWrite(t));
+}
+async function mpWrite(ids) {
+  if (MP.target !== "robot") return toast("映射是在 USB 调试板上做的：把那一行抄进机器人 toml 的 [bus]", true);
+  if (!confirm(`把机器人配置里的 joint_ids 改成\n[${ids.join(", ")}]\n？（先备份；robotd 要重启才生效）`)) return;
+  const r = await call("write_joint_ids", {ids}, "robot");
+  await refresh();
+  $("mp-res").innerHTML = `<div class="note">${esc(r.msg)}</div>`;
+}
+$("mp-start").onclick = e => busy(e.target, async () => {
+  const target = $("sv-target").value;
+  if ($("sv-baud").value === "all") return toast("映射要选一个具体的波特率（装好的舵机一般是 500k）", true);
+  const baud = svBaud();
+  const r = await call("scan", {lo: 0, hi: 39, baud, ma_per_count: +$("mp-mpc").value}, target, 60);
+  const servos = r.found.filter(s => !s.imu);
+  if (!servos.length) return toast(`${baud} 下 ID 0–39 没扫到舵机`, true);
+  const ids = servos.map(s => s.id);
+  const same = MP.target === target && MP.baud === baud;
+  MP = {ids, map: same ? MP.map.map(x => ids.includes(x) ? x : null) : Array(15).fill(null), cur: null,
+        target, baud, multi: servos.filter(s => s.multi_turn).map(s => s.id)};
+  const multi = MP.multi.length ? `；ID ${MP.multi.join(", ")} 是多圈读数，摆不了，断舵机电再上电后重扫` : "";
+  mpRender(`扫到 ${ids.length} 只舵机${ids.length === 15 ? "" : "（应该是 15 只：少了先查线和插座）"}${multi}。`, ids.length !== 15 || !!multi);
+  const next = mpNext(null);
+  if (next != null) await mpPick(next);
+});
+$("mp-clear").onclick = () => { if (confirm("清空映射？")) { MP.map = Array(15).fill(null); MP.cur = null; mpRender(""); } };
+mpRender();
+
+// ---- 新舵机批量配置向导 ---------------------------------------------------------------------
+const WZ_MODEL = {hd1910: {unload: 5, mpc: 0.65, name: "HD-1910"}, hl2915: {unload: 13, mpc: 6.5, name: "HL-2915"}};
+let WZ = null;
+function parseIds(s) {
+  const out = [];
+  for (const part of s.replace(/，/g, ",").split(",")) {
+    const m = part.trim().match(/^(\d+)\s*[-~]\s*(\d+)$/);
+    if (m) { const a = +m[1], b = +m[2], st = a <= b ? 1 : -1; for (let i = a; i !== b + st; i += st) out.push(i); }
+    else if (part.trim()) out.push(+part.trim());
+  }
+  return out;
+}
+function wzArgs(extra) {
+  const m = WZ_MODEL[WZ.model];
+  return Object.assign({final_baud: WZ.baud, unload: m.unload, ma_per_count: m.mpc}, extra || {});
+}
+function wzList() {
+  $("wz-list").innerHTML = WZ.ids.map((id, k) => {
+    const s = WZ.status[id] || (k === WZ.i ? "当前" : "待配");
+    const cls = s === "完成" ? "b-ok" : s === "失败" ? "b-bad" : s === "当前" ? "b-run" : "b-none";
+    return `<span class="badge ${cls}" title="${s}">ID ${id}</span>`;
+  }).join(" ");
+}
+function wzStep(html) { $("wz-step").innerHTML = `<div class="note">${html}</div>`; wzList(); }
+function wzBtn(id, label, fn, primary) {
+  setTimeout(() => { const b = $(id); if (b) b.onclick = () => busy(b, fn); });
+  return `<button id="${id}" class="${primary ? "primary" : ""}">${label}</button>`;
+}
+function wzConnect(msg, warn) {
+  if (WZ.i >= WZ.ids.length) return wzFinish();
+  const target = WZ.ids[WZ.i], n = WZ.assigned.length;
+  WZ.status[target] = "当前";
+  const how = WZ.chain === "chain"
+    ? (n ? `把下一只<b>新舵机</b>串到链尾（已配好的 ${n} 只保持接着）。` : "只接<b>一只</b>新舵机。")
+    : "拔掉上一只，只接<b>这一只</b>新舵机。";
+  wzStep(`<b>第 ${WZ.i + 1}/${WZ.ids.length} 只 → ID ${target}</b><br>${how} 建议先断舵机电源再插，插好再上电（1.25 mm 端子热插拔会拉弧）。
+    ${msg ? `<div class="note ${warn ? "warn" : ""}">${esc(msg)}</div>` : ""}
+    <div class="row">${wzBtn("wz-probe", "接好了，检测", wzProbe, true)}${wzBtn("wz-skip", "跳过这只", async () => { WZ.status[target] = "跳过"; WZ.i++; wzConnect(); })}</div>`);
+}
+async function wzProbe() {
+  const target = WZ.ids[WZ.i];
+  const r = await call("wiz_probe", wzArgs({target, assigned: WZ.chain === "chain" ? WZ.assigned : [],
+    factory_bauds: [1000000, WZ.baud]}), "usb", 60);
+  if (r.state === "target") return wzConfigure(target, r.baud, r.msg);
+  if (r.state === "fresh") {
+    const want = WZ.model === "hd1910" ? "HD-1910" : "HL-2915";
+    return wzConfigure(1, r.baud, r.msg + `；按 ${want} 配置`);
+  }
+  wzConnect(r.msg, true);
+}
+async function wzConfigure(cur, baud, note) {
+  const target = WZ.ids[WZ.i];
+  let r;
+  try { r = await call("wiz_configure", wzArgs({cur_id: cur, new_id: target, baud}), "usb", 60); }
+  catch (e) { WZ.status[target] = "失败"; return wzConnect("配置失败：" + e.message, true); }
+  const s = r.summary;
+  const info = `${esc(note)}<br>已写：${esc(r.steps.join("；"))}<br>读回：ID ${r.id} · ${r.baud} bps · 模式 ${s.mode} · 限位 ${s.limits.join("/")} ·
+    卸载 0x${(s.unload ?? 0).toString(16)} · 锁 ${s.lock} · 位置 ${s.pos} · ${s.volt} V · 状态 ${s.status}`;
+  if (!r.ok) { WZ.status[target] = "失败"; return wzConnect("读回不对：" + r.problems.join("；"), true); }
+  if (!WZ.assigned.includes(target)) WZ.assigned.push(target);
+  if (cur !== target) WZ.newly++;
+  if (WZ.verify && !WZ.verified && cur !== target) {
+    return wzStep(`${info}<div class="note warn"><b>第一只要断电验证</b>：ID 存在 EEPROM 里，没解锁时写入存不住，不验证一下就批量做，可能 15 只全白做。<br>
+      把舵机电源拔掉，等 2 秒再插上，然后点“验证”。</div>
+      <div class="row">${wzBtn("wz-ver", "已断电重上，验证", wzVerify, true)}</div>`);
+  }
+  wzCenterStep(info);
+}
+async function wzVerify() {
+  const target = WZ.ids[WZ.i];
+  try {
+    const r = await call("wiz_verify", wzArgs({id: target}), "usb", 30);
+    if (!r.ok) throw new Error(r.msg);
+    WZ.verified = true; wzCenterStep(esc(r.msg));
+  } catch (e) {
+    WZ.status[target] = "失败";
+    wzStep(`<div class="note warn">${esc(e.message)}</div>先解决这个再继续（检查锁标志写入、换一只试）。
+      <div class="row">${wzBtn("wz-ver2", "再验证一次", wzVerify, true)}${wzBtn("wz-restart", "回到检测", async () => wzConnect())}</div>`);
+  }
+}
+function wzCenterStep(info) {
+  const target = WZ.ids[WZ.i];
+  if (!WZ.center) return wzDone(info);
+  wzStep(`${info}<br><b>回中装舵盘</b>：舵机会转到同圈最近的 2048 并保持扭矩（限流 ${WZ.cur} mA）。舵机还没装舵盘、手离开输出轴。
+    <div class="row">${wzBtn("wz-c", "回中并保持", async () => {
+      if (!motionOK(`ID ${target} 转到中位 2048 并保持扭矩`)) return;
+      const r = await call("center", {id: target, baud: WZ.baud, current_ma: WZ.cur, ma_per_count: WZ_MODEL[WZ.model].mpc}, "usb", 30);
+      if (!r.ok) return wzStep(`<div class="note warn">${esc(r.msg)}</div><div class="row">${wzBtn("wz-c2", "再试一次", async () => wzCenterStep(info), true)}${wzBtn("wz-cs", "跳过回中", async () => wzDone(info))}</div>`);
+      wzStep(`${esc(r.msg)}<br><b>把舵盘按中立位（输出轴的定位标记对齐）装上</b>，拧好螺丝后点下面按钮松扭矩。
+        <div class="row">${wzBtn("wz-off", "舵盘装好了，松扭矩", async () => {
+          await call("torque", {id: target, on: 0, baud: WZ.baud}, "usb"); wzDone(info + "<br>回中到 " + r.pos + "，舵盘已装");
+        }, true)}</div>`);
+    }, true)}${wzBtn("wz-cs", "跳过回中", async () => wzDone(info))}</div>`);
+}
+function wzDone(info) {
+  WZ.status[WZ.ids[WZ.i]] = "完成"; WZ.i++;
+  wzConnect("上一只完成。" + (WZ.chain === "chain" ? "已配好的保持接在链上。" : "把它拔下来。"));
+}
+function wzFinish() {
+  $("wz-check").disabled = false;
+  const done = WZ.ids.filter(i => WZ.status[i] === "完成");
+  wzStep(`<b>全部走完</b>：完成 ${done.length}/${WZ.ids.length}。${WZ.ids.filter(i => WZ.status[i] !== "完成").map(i => `ID ${i}：${WZ.status[i] || "未配"}`).join("，")}<br>
+    点“核对整链”在 ${WZ.baud} bps 上扫一遍（链式接法时应该看到全部 ID）。`);
+}
+$("wz-start").onclick = () => {
+  const ids = parseIds($("wz-ids").value);
+  if (!ids.length || ids.some(i => !(i >= 0 && i <= 252) || i === 200)) return toast("ID 顺序不对（0–252，不能用 200）", true);
+  if (new Set(ids).size !== ids.length) return toast("ID 有重复", true);
+  if (!INFO.com) return toast("先在总览页选 USB 调试板的串口", true);
+  WZ = {ids, i: 0, status: {}, assigned: [], verified: false, newly: 0, model: $("wz-model").value, chain: $("wz-chain").value,
+    baud: +$("wz-baud").value, center: $("wz-center").checked, verify: $("wz-verify").checked, cur: +$("wz-cur").value};
+  if (WZ.chain === "chain" && ids[ids.length - 1] !== 1)
+    toast("串成链时最后一只应该是 ID 1（新舵机都是 ID 1，倒着分才不会撞号）", true);
+  $("sv-mpc").value = String(WZ_MODEL[WZ.model].mpc);
+  wzConnect();
+};
+$("wz-check").onclick = e => busy(e.target, async () => {
+  $("sv-target").value = "usb"; $("sv-baud").value = String(WZ.baud);
+  $("sv-lo").value = 0; $("sv-hi").value = Math.max(...WZ.ids) + 2;
+  $("sv-scan").click();
+});
+
+// ---- 零位 ---------------------------------------------------------------------------------
+$("zr-start").onclick = e => busy(e.target, async () => {
+  await refresh();
+  if (!HELLO?.robotd_pids?.length) return toast("robotd 没在跑：先在总览页启动它", true);
+  if (!confirm("开始标定会让 robotd 全身卸力（robot.relax）。机器人躺好或托好了吗？")) return;
+  const r = await post("/api/calib/start");
+  showCalib(r.port);
+});
+function showCalib(port) {
+  const url = `${location.protocol}//${location.hostname}:${port}/`;
+  $("zr-state").innerHTML = `标定页在 <a href="${url}" target="_blank">${url}</a>（也可单独开）`;
+  if (!$("zr-frame").firstChild) $("zr-frame").innerHTML = `<iframe src="${url}"></iframe>`;
+}
+
+// ---- IMU 固件 -----------------------------------------------------------------------------
+async function loadFw() {
+  const f = await (await fetch("/api/flash/info")).json();
+  const rows = [["源码最近提交", esc(f.git)], ["未提交改动", f.dirty.length ? `<span class="red">${esc(f.dirty.join(" "))}</span>` : "无"],
+    ["构建产物", f.elf ? `${esc(f.elf_time)}${f.stale ? ' <span class="red">比源码旧，先构建</span>' : ""}` : '<span class="red">还没构建</span>'],
+    ["源码修改时间", f.src_time], ["芯片", f.chip], ["cargo", f.cargo || '<span class="red">没找到</span>'],
+    ["probe-rs", f.probe_rs || '<span class="red">没找到（cargo install probe-rs-tools --locked）</span>']];
+  $("fw-info").innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+}
+async function runJob(what, btn) {
+  const r = await post("/api/flash/run", {what});
+  $("job-log").textContent = ""; let since = 0;
+  while (true) {
+    const j = await (await fetch(`/api/job?id=${r.job}&since=${since}`)).json();
+    $("job-title").textContent = j.title + (j.done ? (j.rc === 0 ? " — 完成" : " — 失败") : " — 运行中");
+    if (j.lines.length) { $("job-log").textContent += j.lines.join("\n") + "\n"; $("job-log").scrollTop = 1e9; }
+    since = j.n;
+    if (j.done) { loadFw(); return j.rc === 0; }
+    await new Promise(res => setTimeout(res, 400));
+  }
+}
+$("fw-build").onclick = e => busy(e.target, () => runJob("build"));
+$("fw-probe").onclick = e => busy(e.target, () => runJob("probe"));
+$("fw-flash").onclick = e => busy(e.target, async () => {
+  if (!confirm("ST-Link 已接 PDB J2、PDB 已上电？\n烧录期间 IMU 板停止应答，robotd 在跑的话会报 IMU 超时。")) return;
+  if (await runJob("flash")) toast("烧录完成；点\"4. 经总线核对\"");
+});
+$("fw-verify").onclick = e => busy(e.target, async () => {
+  const r = await call("test_imu", {seconds: 2});
+  $("fw-verify-out").innerHTML = resultBox("imu", r);
+});
+
+// ---- 整机测试 -----------------------------------------------------------------------------
+const TESTS = [
+  {key: "bus", name: "舵机总线", op: "test_bus", args: () => ({rounds: +$("t-rounds").value}), timeout: 120, bus: true},
+  {key: "imu", name: "IMU", op: "test_imu", args: () => ({seconds: 2}), bus: true},
+  {key: "mic", name: "麦克风", op: "test_mic", args: () => ({seconds: 4}),
+    before: () => confirm("麦克风录音 4 秒：点确定后请对着机器人拍手或说话。")},
+  {key: "spk", name: "喇叭", op: "test_speaker", args: () => ({freq: 1000, dbfs: -12})},
+  {key: "tof", name: "ToF", op: "test_tof", args: () => ({seconds: 2.5}), timeout: 60},
+  {key: "cam", name: "摄像头", op: "test_camera", args: () => ({frames: 45}), timeout: 60},
+];
+const RESULTS = {};
+function summarize(key, r) {
+  if (!r) return "";
+  const f = (v, d = 1) => v == null ? "—" : (+v).toFixed(d);
+  switch (key) {
+    case "bus": return `${r.order.length - r.missing.length}/${r.order.length} 应答 · 错误率 ${(r.err_rate * 100).toFixed(2)}%（${r.rounds} 轮，坏轮 ${r.bad_rounds}）· ${r.ms_per_round} ms/轮 · ${f(r.volt_min)}–${f(r.volt_max)} V`;
+    case "imu": return `固件 ${r.fw} · ${r.rate_hz} Hz · 俯仰 ${r.pitch_deg}° 横滚 ${r.roll_deg}° · |q| ${r.quat_norm} · 陀螺噪声 ${Math.max(...r.gyro_std_dps).toFixed(2)} dps 零偏 ${r.gyro_mean_dps.join("/")}${r.diag ? ` · 板上接收错 ${r.diag.rx_err}（累计 ${r.diag.rx_err_total}）` : ""}`;
+    case "mic": return ["left", "right"].map(c => `${c === "left" ? "左" : "右"}：直流 ${r[c].dc} 底噪 ${r[c].floor} 峰 ${r[c].peak}`).join(" · ");
+    case "spk": return `1 kHz 高出 左 ${r.left?.tone_db ?? "—"} dB / 右 ${r.right?.tone_db ?? "—"} dB` + (r.heard == null ? "" : ` · 人耳：${r.heard ? "听到" : "没听到"}`);
+    case "tof": return `${r.hz ?? "—"} Hz · 有效 ${r.valid_median ?? "—"}/64 · 中间 ${r.centre_mm ?? "—"} mm${r.started_tofd ? " · 临时起了 tofd" : ""}`;
+    case "cam": return `${r.device ?? ""} · ${r.fps ?? "—"} fps · ${r.size ? r.size.join("×") : ""} · 曝光 ${r.exposure_us ?? "—"} µs 增益 ${r.gain ?? "—"} · 亮度 ${r.mean ?? "—"}`;
+  }
+  return "";
+}
+function tofGrid(r) {
+  if (!r.grid) return "";
+  return `<div class="tof">` + r.grid.map((d, i) => {
+    const ok = [5, 9].includes((r.grid_status || [])[i]);
+    const t = Math.max(0, Math.min(1, d / 2000));
+    const col = ok ? `hsl(${(t * 220).toFixed(0)},70%,42%)` : "#777";
+    return `<div style="background:${col}" title="${d} mm / 状态 ${(r.grid_status || [])[i]}">${ok ? d : "×"}</div>`;
+  }).join("") + `</div><div class="muted">8×8 距离 mm（灰 = 无效区）</div>`;
+}
+function resultBox(key, r) {
+  const prob = r.problems?.length ? `<div class="note warn">${r.problems.map(esc).join("<br>")}</div>` : "";
+  let extra = "";
+  if (key === "tof") extra = tofGrid(r);
+  if (key === "cam" && r.thumb_bmp) extra = `<img src="data:image/bmp;base64,${r.thumb_bmp}" style="max-width:100%;image-rendering:pixelated;border-radius:6px">`;
+  if (key === "bus" && r.servos) extra = `<table><tr><th>ID</th><th>关节</th><th>位置</th><th>电压</th><th>温度</th><th>状态</th><th>电流</th><th>失败</th></tr>` +
+    r.servos.map(s => `<tr><td>${s.id}</td><td>${jointOf(s.id)}</td><td class="${s.multi_turn ? "red" : ""}">${s.pos ?? "—"}</td><td>${s.volt ?? "—"}</td><td>${s.temp ?? "—"}</td>
+      <td class="${s.status ? "red" : ""}">${s.status ?? "—"}</td><td>${s.curr_ma ?? "—"}</td><td>${(r.fails || {})[s.id] || 0}</td></tr>`).join("") + `</table>`;
+  const raw = Object.assign({}, r); delete raw.thumb_bmp; delete raw.grid; delete raw.grid_status; delete raw.servos;
+  return `<p><span class="badge ${r.ok ? "b-ok" : "b-bad"}">${r.ok ? "通过" : "不通过"}</span> ${esc(summarize(key, r))}</p>${prob}${extra}
+    <details><summary class="muted">全部读数</summary><pre>${esc(JSON.stringify(raw, null, 1))}</pre></details>`;
+}
+function renderTests() {
+  $("t-table").innerHTML = `<tr><th>项目</th><th></th><th>结果</th><th>读数</th></tr>` + TESTS.map(t => {
+    const r = RESULTS[t.key];
+    const badge = !r ? `<span class="badge b-none">未测</span>` : r.running ? `<span class="badge b-run">测试中</span>`
+      : r.error ? `<span class="badge b-bad">出错</span>` : `<span class="badge ${r.res.ok ? "b-ok" : "b-bad"}">${r.res.ok ? "通过" : "不通过"}</span>`;
+    const val = !r || r.running ? "" : r.error ? `<span class="red">${esc(r.error)}</span>` : esc(summarize(t.key, r.res));
+    return `<tr class="click" data-k="${t.key}"><td><b>${t.name}</b></td><td><button data-run="${t.key}">运行</button></td><td>${badge}</td><td style="white-space:normal">${val}</td></tr>`;
+  }).join("");
+  document.querySelectorAll("#t-table button[data-run]").forEach(b => b.onclick = ev => { ev.stopPropagation(); runTest(b.dataset.run); });
+  document.querySelectorAll("#t-table tr.click").forEach(tr => tr.onclick = () => showTest(tr.dataset.k));
+}
+function showTest(key) {
+  const r = RESULTS[key], t = TESTS.find(x => x.key === key);
+  $("t-detail").innerHTML = !r || r.running ? "" : `<h2>${t.name}</h2>` + (r.error ? `<div class="note warn">${esc(r.error)}</div>` : resultBox(key, r.res));
+}
+async function runTest(key) {
+  const t = TESTS.find(x => x.key === key);
+  if (t.before && !t.before()) return;
+  RESULTS[key] = {running: true}; renderTests();
+  try {
+    const res = await call(t.op, t.args(), "robot", t.timeout || 60);
+    if (key === "spk") {
+      res.heard = confirm(`喇叭刚放了 1.5 秒 1 kHz 嘀声（麦克风测得 ${res.best_db} dB）。\n\n你听到了吗？（确定 = 听到，取消 = 没听到）`);
+      if (!res.heard) { res.ok = false; res.problems = (res.problems || []).concat(["人耳没听到"]); }
+    }
+    RESULTS[key] = {res, at: new Date().toISOString()};
+  } catch (e) { RESULTS[key] = {error: e.message, at: new Date().toISOString()}; }
+  renderTests(); showTest(key);
+}
+function testWarn() {
+  const w = [];
+  if (HELLO?.robotd_pids?.length) w.push(`robotd 在跑（PID ${HELLO.robotd_pids.join(", ")}）：总线和 IMU 两项会被拒绝——到总览页停掉它。`);
+  if ((HELLO?.services || []).includes("visiond")) w.push("visiond 在跑：摄像头被它占着。");
+  $("t-warn").innerHTML = w.map(x => `<div class="note warn">${esc(x)}</div>`).join("");
+}
+$("t-all").onclick = e => busy(e.target, async () => { for (const t of TESTS) await runTest(t.key); });
+$("t-export").onclick = () => {
+  const rep = {time: new Date().toISOString(), host: INFO.host, hostname: HELLO?.hostname, config: HELLO?.config_path,
+    results: Object.fromEntries(Object.entries(RESULTS).map(([k, v]) => {
+      const r = v.res ? Object.assign({}, v.res) : null; if (r) delete r.thumb_bmp; return [k, {at: v.at, error: v.error, result: r}]; }))};
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(rep, null, 1)], {type: "application/json"}));
+  a.download = `bringup-${HELLO?.hostname || "robot"}-${rep.time.slice(0, 19).replace(/[:T]/g, "")}.json`; a.click();
+};
+
+// ---- 启动 ---------------------------------------------------------------------------------
+(async () => {
+  INFO = await (await fetch("/api/info")).json();
+  $("zr-config").textContent = INFO.config;
+  document.querySelectorAll(".zr-config-name").forEach(e => e.textContent = INFO.config);
+  // 教程第一次默认展开，之后记住用户收起/展开
+  document.querySelectorAll("details.guide").forEach((d, i) => {
+    try { const v = localStorage.getItem("guide-" + i); if (v !== null) d.open = v === "1"; } catch (e) {}
+    d.addEventListener("toggle", () => { try { localStorage.setItem("guide-" + i, d.open ? "1" : "0"); } catch (e) {} });
+  });
+$("zr-restart").textContent = INFO.restart_cmd; $("zr-init").textContent = INFO.init_cmd;
+  if (INFO.calib_port) showCalib(INFO.calib_port);
+  renderTests(); loadPorts(); refresh();
+})();
+</script>
+</body>
+</html>

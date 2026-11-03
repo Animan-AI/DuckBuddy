@@ -34,6 +34,12 @@ button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .help{color:var(--muted);font-size:13px;margin-top:12px}
 .help ol{padding-left:18px;margin:6px 0}
 input[type=range]{width:110px}
+.cal{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+#calmsg{color:var(--muted);font-size:12px;margin:0 0 8px;min-height:1.2em}
+td button{padding:1px 7px;font-size:12px}
+.chg{color:var(--warn);font-weight:600}
+button.save{border-color:var(--acc);color:var(--acc)}
+button:disabled{opacity:.45;cursor:default}
 </style>
 </head>
 <body>
@@ -48,6 +54,13 @@ input[type=range]{width:110px}
       <figure><img id="side" alt="侧面"><figcaption>左侧面（从机器人左边看，机器人朝左）</figcaption></figure>
       <figure><img id="bump" alt="正方向预览"><figcaption id="bumpcap">点右侧表格中的关节：这里显示该关节再往<b>正方向</b>转 20° 的样子</figcaption></figure>
     </div>
+    <h3 id="refh" style="margin:14px 0 8px;font-size:15px">参考姿势：零位（照着摆实机）</h3>
+    <div class="views">
+      <figure><img id="ref-front" alt="参考正面"><figcaption>正面</figcaption></figure>
+      <figure><img id="ref-side" alt="参考侧面"><figcaption>左侧面</figcaption></figure>
+      <figure><img id="ref-iso" alt="参考左前方"><figcaption>左前方</figcaption></figure>
+    </div>
+    <p id="refnote" class="help"></p>
     <div class="help">
       <b>怎么用</b>（扭矩关着，用手摆机器人）：
       <ol>
@@ -55,6 +68,12 @@ input[type=range]{width:110px}
         <li>逐个关节：在表格里点它，看第三张图它的正方向往哪转；再用手把实机这个关节往同一方向转 —— 前两张图里的模型应该跟着同向转，读数变大。</li>
         <li>摆成站姿（home），"参考"选 home：差值应在几度以内，躯干俯仰 / 横滚应接近 0。</li>
       </ol>
+      标定：方向反了，点那一行的<b>反向</b>（马上生效，再掰一下确认）；把关节摆到零位后点<b>所选关节设为零位</b>
+      （或全身摆好点<b>全部设为零位</b>）。也可以按站姿标："参考"选站姿 home，扭矩关着把机器人摆成站姿放在桌上
+      （脚底贴平、躯干水平看下面的 IMU 俯仰 / 横滚≈0），按钮变成<b>设为站姿角度</b>：把当前姿势记成 home 的角度（比如髋俯仰 −26.2°），
+      而不是 0°。站在 home 上精调：零点两边的 <b>−/+</b> 让这个关节在同一指令角下
+      实际往负/正方向多转 0.5°（看第三张图的正方向），再点<b>写入并回 home</b>看效果（robotd 重启不断扭矩）。嘴没有模型：张嘴读数应变大，闭到底设为零位。改过的值标成橙色，
+      <b>写入配置</b>才会存到机器人上（先备份）。<br>
       颜色：差值 &lt;3° 绿，&lt;8° 黄，其余红。
     </div>
   </section>
@@ -63,8 +82,16 @@ input[type=range]{width:110px}
       <button id="r-zero" class="on">零位</button>
       <button id="r-home">站姿 home</button>
     </div>
+    <div class="cal">
+      <button id="z-sel" disabled>所选关节设为零位</button>
+      <button id="z-all">全部设为零位</button>
+      <button id="c-reset">撤销改动</button>
+      <button id="c-save" class="save">写入配置</button>
+      <button id="c-home" class="save" hidden>写入并回 home</button>
+    </div>
+    <div id="calmsg"></div>
     <table>
-      <thead><tr><th>关节</th><th>实机°</th><th>参考°</th><th>差°</th><th id="demoh" hidden>演示</th></tr></thead>
+      <thead><tr><th>关节</th><th>实机°</th><th>参考°</th><th>差°</th><th>方向</th><th>零点</th><th id="demoh" hidden>演示</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
     <div class="imu"><span>躯干俯仰 <b id="pitch">–</b>°（正=前倾）</span><span>横滚 <b id="roll">–</b>°</span></div>
@@ -73,8 +100,24 @@ input[type=range]{width:110px}
 <script>
 let ref = "zero", sel = null, st = null, demoPose = null;
 const $ = id => document.getElementById(id);
-$("r-zero").onclick = () => { ref = "zero"; $("r-zero").classList.add("on"); $("r-home").classList.remove("on"); draw(); };
-$("r-home").onclick = () => { ref = "home"; $("r-home").classList.add("on"); $("r-zero").classList.remove("on"); draw(); };
+$("r-zero").onclick = () => { ref = "zero"; $("r-zero").classList.add("on"); $("r-home").classList.remove("on"); refImgs(); zLabels(); draw(); };
+$("r-home").onclick = () => { ref = "home"; $("r-home").classList.add("on"); $("r-zero").classList.remove("on"); refImgs(); zLabels(); draw(); };
+// "设为…"按当前参考：零位记成 0°，站姿 home 记成 home 的角度
+const refWord = () => ref === "zero" ? "零位" : "站姿角度";
+function zLabels() {
+  const i = st && sel ? st.names.indexOf(sel) : -1;
+  $("z-sel").textContent = i >= 0 ? `${st.cn[i]} 设为${refWord()}` : `所选关节设为${refWord()}`;
+  $("z-all").textContent = `全部设为${refWord()}`;
+}
+const REF_NOTE = {
+  zero: "零位：两腿伸直、竖直向下，脚掌与小腿垂直、脚尖朝正前；髋不内外扭、不外张；脖子、头摆正不歪；嘴闭到底。",
+  home: "站姿 home：两腿伸直（膝 ≈0°），整条腿向前斜约 26°（髋俯仰 ±26°），脚在髋的前方，踝 ±26° 把脚底放平；髋横滚 ±5°、偏航 0；脖子那节往后仰 20°、头再往前低 20°，头和零位时一样水平。躯干水平，两脚前后对齐。",
+};
+function refImgs() {
+  $("refh").textContent = `参考姿势：${ref === "zero" ? "零位" : "站姿 home"}（照着摆实机）`;
+  $("refnote").textContent = REF_NOTE[ref];
+  ["front", "side", "iso"].forEach(v => loadImg("ref-" + v, `/frame?view=${v}&pose=${ref}`));
+}
 const deg = r => r * 180 / Math.PI;
 
 function draw() {
@@ -85,8 +128,18 @@ function draw() {
       const tr = document.createElement("tr");
       tr.dataset.i = i;
       tr.innerHTML = `<td>${st.cn[i]}<br><small style="color:var(--muted)">${n}</small></td><td class="v"></td><td class="r"></td><td class="d"></td>` +
+        `<td><button class="flip" title="翻转这个关节的方向">反向</button> <span class="s"></span></td>` +
+        `<td><button class="nm" title="同一指令角下，实际往负方向多转 0.5°">−</button> <span class="o"></span> ` +
+        `<button class="np" title="同一指令角下，实际往正方向多转 0.5°">+</button></td>` +
         (st.demo ? `<td><input type="range" min="-90" max="90" step="1" value="${Math.round(deg(st.joints[i]))}"></td>` : "");
-      tr.onclick = e => { if (e.target.tagName === "INPUT") return; sel = n; [...tb.children].forEach(r => r.classList.toggle("sel", r === tr)); };
+      tr.querySelector(".flip").onclick = () => post("/flip", {i});
+      tr.querySelector(".nm").onclick = () => post("/nudge", {i, deg: -0.5});
+      tr.querySelector(".np").onclick = () => post("/nudge", {i, deg: 0.5});
+      tr.onclick = e => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+        sel = n; [...tb.children].forEach(r => r.classList.toggle("sel", r === tr));
+        $("z-sel").disabled = false; zLabels();
+      };
       if (st.demo) tr.querySelector("input").oninput = e => {
         demoPose = demoPose || st.joints.slice();
         demoPose[i] = +e.target.value * Math.PI / 180;
@@ -103,7 +156,24 @@ function draw() {
     const dc = tr.querySelector(".d");
     dc.textContent = (d >= 0 ? "+" : "") + d.toFixed(1);
     dc.className = "d " + (Math.abs(d) < 3 ? "d0" : Math.abs(d) < 8 ? "d1" : "d2");
+    const c = st.calib, sc = tr.querySelector(".s"), oc = tr.querySelector(".o");
+    tr.querySelectorAll("td button").forEach(b => b.disabled = !c.ready);
+    if (c.ready) {
+      sc.textContent = c.signs[i] > 0 ? "+1" : "−1";
+      sc.className = "s" + (c.signs[i] !== c.loaded_signs[i] ? " chg" : "");
+      oc.textContent = c.offsets[i];
+      oc.className = "o" + (c.offsets[i] !== c.loaded_offsets[i] ? " chg" : "");
+      oc.title = `原值 ${c.loaded_offsets[i]}`;
+    }
   });
+  const c = st.calib;
+  const dirty = c.ready && c.signs.some((s, i) => s !== c.loaded_signs[i] || c.offsets[i] !== c.loaded_offsets[i]);
+  $("calmsg").textContent = (c.msg || "") + (dirty ? " · 有未写入的改动" : "");
+  ["z-all", "c-reset", "c-save"].forEach(id => $(id).disabled = !c.ready);
+  $("c-save").disabled = !dirty;
+  $("c-home").hidden = !c.can_home;
+  $("c-home").disabled = !dirty || busy;
+  if (!c.ready) $("z-sel").disabled = true;
   $("pitch").textContent = st.pitch.toFixed(1);
   $("roll").textContent = st.roll.toFixed(1);
   const s = $("status");
@@ -111,6 +181,26 @@ function draw() {
   s.textContent = st.status + (st.age !== null && !st.demo ? `（${st.age.toFixed(1)} s 前）` : "") + (st.policy ? ` · policy=${st.policy}` : "");
   s.className = fresh ? "ok" : "bad";
 }
+
+async function post(path, body) {
+  try {
+    const r = await (await fetch(path, {method: "POST", body: JSON.stringify(body || {})})).json();
+    if (r.msg) $("calmsg").textContent = r.msg;
+    if (!r.ok) alert(r.msg);
+  } catch (e) { alert("网页服务没响应"); }
+}
+$("z-sel").onclick = () => sel && post("/zero", {i: st.names.indexOf(sel), ref});
+$("z-all").onclick = () => confirm(ref === "zero" ? "把全身当前的姿势都记成零位？"
+  : "把全身当前的姿势都记成站姿 home 的角度？（机器人要摆成站姿：脚底贴平、躯干水平）") && post("/zero", {ref});
+$("c-reset").onclick = () => post("/reset");
+$("c-save").onclick = () => confirm("把方向和零点写入机器人的配置（先备份）？") && post("/save");
+let busy = false;
+$("c-home").onclick = async () => {
+  if (!confirm("写入配置、重启 robotd，然后上扭矩回 home（机器人会动）？")) return;
+  busy = true; $("c-home").textContent = "写入、回 home 中…";
+  await post("/save", {home: true});
+  busy = false; $("c-home").textContent = "写入并回 home";
+};
 
 async function poll() {
   try { st = await (await fetch("/state")).json(); draw(); } catch (e) { $("status").textContent = "网页服务没响应"; }
@@ -129,7 +219,7 @@ async function frames() {
   }
   setTimeout(frames, 60);
 }
-poll(); frames();
+poll(); frames(); refImgs();
 </script>
 </body>
 </html>

@@ -11,7 +11,10 @@
  *              the V4L2 buffer's) | u32 exposure_us | u32 gain (ISP units) | width*height bytes
  *
  *   gcc -O2 -o duckcam duckcam.c -lAWIspApi -lisp -lisp_ini -lpthread -ldl -lm
- *   ./duckcam [--every N] [--half | --nv12] [--frames N] [--no-isp] > frames.bin
+ *   ./duckcam [--every N] [--half | --nv12] [--frames N] [--no-isp] [--dev /dev/videoN] > frames.bin
+ *
+ * The capture node is the lowest /dev/videoN the kernel names "vin_video*" (video0 on Xiaobai, video8 on
+ * Xiaohei: the sensor's CSI slot decides), its N the ISP's video index; --dev picks one.
  *
  * --nv12 sends colour instead: magic "DCNV" and the full frame as NV12 (width*height luma, then
  * width*height/2 interleaved chroma), for a photo Jev looks at. The driver's chroma plane starts
@@ -35,6 +38,7 @@
 #include <linux/videodev2.h>
 
 #include <AWIspApi.h>
+#include <dirent.h>
 
 #define NBUF 4
 #define WIDTH 1920
@@ -63,16 +67,43 @@ static int write_all(const void *p, size_t n) {
     return 0;
 }
 
+/* The VIN capture node: the lowest /dev/videoN whose name is vin_video*. Returns N. */
+static int find_vin(char *path, size_t n) {
+    int best = -1;
+    DIR *d = opendir("/sys/class/video4linux");
+    struct dirent *e;
+    while (d && (e = readdir(d))) {
+        int k;
+        if (sscanf(e->d_name, "video%d", &k) != 1) continue;
+        char f[300], name[64] = "";
+        snprintf(f, sizeof f, "/sys/class/video4linux/%s/name", e->d_name);
+        FILE *fp = fopen(f, "r");
+        if (!fp) continue;
+        if (!fgets(name, sizeof name, fp)) name[0] = 0;
+        fclose(fp);
+        if (!strncmp(name, "vin_video", 9) && (best < 0 || k < best)) best = k;
+    }
+    if (d) closedir(d);
+    if (best < 0) best = 0;
+    snprintf(path, n, "/dev/video%d", best);
+    return best;
+}
+
 int main(int argc, char **argv) {
     int every = 1, half = 0, nv12 = 0, use_isp = 1;
     long frames = 0;
+    char dev[64] = "";
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--every") && i + 1 < argc) every = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atol(argv[++i]);
         else if (!strcmp(argv[i], "--half")) half = 1;
         else if (!strcmp(argv[i], "--nv12")) nv12 = 1;
         else if (!strcmp(argv[i], "--no-isp")) use_isp = 0;
-        else { fprintf(stderr, "usage: duckcam [--every N] [--half | --nv12] [--frames N] [--no-isp]\n"); return 2; }
+        else if (!strcmp(argv[i], "--dev") && i + 1 < argc) snprintf(dev, sizeof dev, "%s", argv[++i]);
+        else {
+            fprintf(stderr, "usage: duckcam [--every N] [--half | --nv12] [--frames N] [--no-isp] [--dev /dev/videoN]\n");
+            return 2;
+        }
     }
     if (every < 1) every = 1;
     frames_fd = dup(1);
@@ -81,8 +112,11 @@ int main(int argc, char **argv) {
     signal(SIGINT, on_signal);
     signal(SIGPIPE, on_signal);
 
-    int fd = open("/dev/video0", O_RDWR | O_NONBLOCK, 0);
-    if (fd < 0) { perror("duckcam: /dev/video0"); return 1; }
+    int video = 0;
+    if (dev[0]) sscanf(dev, "/dev/video%d", &video);
+    else video = find_vin(dev, sizeof dev);
+    int fd = open(dev, O_RDWR | O_NONBLOCK, 0);
+    if (fd < 0) { fprintf(stderr, "duckcam: %s: %s\n", dev, strerror(errno)); return 1; }
     struct v4l2_input inp = { .index = 0 };
     if (xioctl(fd, VIDIOC_S_INPUT, &inp) < 0) { perror("duckcam: S_INPUT"); return 1; }
     struct v4l2_streamparm parm;
@@ -141,7 +175,7 @@ int main(int argc, char **argv) {
     int isp_id = -1;
     if (use_isp) {
         isp = CreateAWIspApi();
-        if (isp && isp->ispApiInit() >= 0 && (isp_id = isp->ispGetIspId(0)) >= 0 && isp->ispStart(isp_id) >= 0) {
+        if (isp && isp->ispApiInit() >= 0 && (isp_id = isp->ispGetIspId(video)) >= 0 && isp->ispStart(isp_id) >= 0) {
             fprintf(stderr, "duckcam: ISP started (id %d)\n", isp_id);
         } else {
             fprintf(stderr, "duckcam: ISP did not start; fixed exposure\n");
