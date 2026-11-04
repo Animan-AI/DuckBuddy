@@ -175,6 +175,17 @@ main { max-width: var(--max); margin: 0 auto; padding: 24px 16px 56px; }
 .photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
 .photos .photo { margin: 8px 0; }
 .photos:has(> .photo:only-child) { grid-template-columns: minmax(0, 360px); }
+/* a photo with numbered markers on it (left/top in % of the picture), and the same number in its table */
+.annot-img { position: relative; }
+.mark, .num {
+  display: inline-grid; place-items: center; border-radius: 50%; font-weight: 700; line-height: 1;
+  background: var(--accent); color: #1d1606;
+}
+.mark {
+  position: absolute; transform: translate(-50%, -50%); width: 28px; height: 28px; font-size: 15px;
+  border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+}
+.num { width: 22px; height: 22px; font-size: 13px; }
 
 .table-wrap { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--border); border-radius: 10px; }
 table { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--surface); }
@@ -206,4 +217,5 @@ td:first-child { white-space: nowrap; }
   .site-nav a { padding: 6px 7px; font-size: 14px; }
   .site-nav a.gh { display: none; }
   td:first-child { white-space: normal; }
+  .mark { width: 22px; height: 22px; font-size: 13px; border-width: 1.5px; }
 }

@@ -48,21 +48,23 @@ PDB 上还有 IMU，它的朝向决定姿态解算对不对：板子按照片的
 
 HAT 叠在 Orange Pi Zero 3W 上，两块板一起装在脸部（face_part）里面，摄像头和 ToF 也装在脸上。
 
-**先认 HAT 上的插座**（丝印都印在板子上）：
+**先认 HAT 上的插座**（编号对应下面照片里的标记，丝印都印在板子上）：
 
-| 丝印 | 接什么 |
-|---|---|
-| J2 HEAD/PDB（1 G · 2 V · 3 D） | 接 PDB 的那根 PH2.0 3P 同向线：GND、电池、总线数据。**GND 和 DATA 别接反**，接反了每只舵机都会回 `ff ff 00` |
-| J5 TOF | 8 × 8 ToF 模块（4P：3V3 / GND / SCL / SDA） |
-| J6 SPK P/N | 喇叭 |
-| J7 MIC / J8 MIC P/N | 左、右两个麦克风 |
-| 5V PWR | 指示灯：HAT 的 5 V 有电时亮 |
+<figure class="photo annot"><div class="annot-img"><img src="img/assembly/hat-top.jpg" alt="HAT 正面，插座上标了编号：1 风扇、2 ToF、3 左麦克风、4 右麦克风、5 喇叭、6 接 PDB" loading="lazy"><span class="mark" style="left:35.4%;top:22.2%">1</span><span class="mark" style="left:30.4%;top:40.4%">2</span><span class="mark" style="left:37.7%;top:79.7%">3</span><span class="mark" style="left:50%;top:79.7%">4</span><span class="mark" style="left:59.9%;top:59.4%">5</span><span class="mark" style="left:92.5%;top:45.7%">6</span></div><figcaption>HAT 正面：左上角是风扇和 ToF，下面一排是左、右麦克风和喇叭，右边白色 3P 是接 PDB 的 J2。</figcaption></figure>
 
-<figure class="photo"><img src="img/assembly/hat-top.jpg" alt="HAT 正面，能看到 J2、J5、J6、J7、J8 等插座的丝印" loading="lazy"><figcaption>HAT 正面：右边白色 3P 是 J2（接 PDB），左上是 ToF，下面一排是两个麦克风和喇叭。</figcaption></figure>
+| 编号 | 位置 / 丝印 | 接什么 |
+|---|---|---|
+| <span class="num">1</span> | 左上角的 2P 小插座 | 散热小风扇 |
+| <span class="num">2</span> | 左上，丝印 TOF（4P） | 8 × 8 ToF 模块（3V3 / GND / SCL / SDA） |
+| <span class="num">3</span> | 下排左边，J7 MIC | 左麦克风 |
+| <span class="num">4</span> | 下排中间，J8 MIC P/N | 右麦克风 |
+| <span class="num">5</span> | 下排右边，J6 SPK P/N | 喇叭 |
+| <span class="num">6</span> | 右边白色 3P，J2 HEAD/PDB（1 G · 2 V · 3 D） | 接 PDB 的那根 PH2.0 3P 同向线：GND、电池、总线数据。**GND 和 DATA 别接反**，接反了每只舵机都会回 `ff ff 00` |
+| — | 5V PWR（J6 右边） | 指示灯：HAT 的 5 V 有电时亮 |
 
 <figure class="photo"><img src="img/assembly/hat-stack.jpg" alt="HAT 叠在 Orange Pi Zero 3W 上，麦克风、喇叭和 ToF 线都已插好" loading="lazy"><figcaption>HAT 叠在 Orange Pi 上，麦克风、喇叭和 ToF 的线都插好了。麦克风线用双绞线，能少一点干扰。</figcaption></figure>
 
-**散热小风扇。** Orange Pi 旁边贴一个小风扇帮它散热，用热熔胶固定在板子侧面就行。
+**散热小风扇。** Orange Pi 旁边贴一个小风扇帮它散热，用热熔胶固定在板子侧面就行，线插 HAT 左上角的风扇座（上面照片的 1 号）。
 
 <div class="photos">
 <figure class="photo"><img src="img/assembly/hat-fan.jpg" alt="小风扇贴在 Orange Pi 侧面" loading="lazy"><figcaption>风扇贴在 Orange Pi 侧面。</figcaption></figure>
