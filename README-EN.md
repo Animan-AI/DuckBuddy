@@ -11,6 +11,8 @@
 <img src="https://img.shields.io/badge/servos-Feetech%20HL--2915-green" alt="Feetech HL-2915">
 </p>
 
+<p align="center">🌐 <a href="https://animan-ai.github.io/DuckBuddy/"><b>Project page</b></a> (in Chinese): <a href="https://animan-ai.github.io/DuckBuddy/bom.html">BOM</a> · <a href="https://animan-ai.github.io/DuckBuddy/assembly.html">assembly</a> · <a href="https://animan-ai.github.io/DuckBuddy/tutorial.html">getting started</a> · <a href="https://pan.baidu.com/s/1n_kGYn8liX8YniRDvvMkiA?pwd=nway">system image</a> (code nway)</p>
+
 <p align="center"><a href="README.md">中文</a> | English</p>
 
 https://github.com/user-attachments/assets/7dd5c290-7b48-4f87-a991-7aab6c25632f
