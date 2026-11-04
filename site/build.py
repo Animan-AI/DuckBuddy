@@ -20,8 +20,10 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 OUT = HERE / "_site"
 MEDIA = ["demo.gif", "wechat-group.png", "arch-software-zh.png", "arch-hardware-zh.png"]
-# Where the system image can be downloaded; empty: the home page says to ask in the group.
-IMAGE_URL = ""
+# Where the system image can be downloaded (a Baidu Netdisk share, with its extraction code);
+# empty: the home page says to ask in the group.
+IMAGE_URL = "https://pan.baidu.com/s/1n_kGYn8liX8YniRDvvMkiA?pwd=nway"
+IMAGE_CODE = "nway"
 NAV = [("index", "首页"), ("bom", "物料清单"), ("tutorial", "新手教程")]
 
 
@@ -57,7 +59,8 @@ def main():
         shutil.rmtree(OUT)
     (OUT / "media").mkdir(parents=True)
     template = (HERE / "template.html").read_text(encoding="utf-8")
-    image_link = (f'<a class="btn primary" href="{IMAGE_URL}">下载镜像</a>' if IMAGE_URL
+    image_link = (f'<a class="btn primary" href="{IMAGE_URL}">百度网盘下载</a>'
+                  f'<span class="muted">　提取码 <code>{IMAGE_CODE}</code></span>' if IMAGE_URL
                   else "下载链接整理中，暂时请到下面的交流群里获取。")
     for page in sorted((HERE / "content").glob("*.*")):
         meta, body, toc = render(page)

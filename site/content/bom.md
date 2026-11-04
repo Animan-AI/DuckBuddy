@@ -62,7 +62,8 @@ DuckBuddy 有两个版本，除舵机、电池和两处焊接外，其余零件�
 | 轴承 | 深沟球轴承 16 × 22 × 4 mm（6706ZZ） | 11 | 关节转轴 |
 | 轴承 | 深沟球轴承 10 × 15 × 3 mm | 3 | 关节转轴 |
 | 螺丝 | M2 自攻螺丝，舵机用 M2 × 6 | 1 盒 | 舵机、电路板、外壳都用 M2 自攻 |
-| 连接线 | HAT J2 ↔ PDB J5 的 3P 线，**同向**（1 对 1） | 1 | XH2.54 3P。如果 PDB 上的 J5 是 PH2.0，就用 PH2.0 ↔ XH2.54 的 3P 转接线。**GND 和 DATA 别接反** |
+| 连接线 | HAT ↔ PDB：PH2.0 3P **同向**线（1 对 1） | 1 | 板子附带。**GND 和 DATA 别接反** |
+| 转接线（3S 版） | PH1.25 ↔ AMP2.0 3P **同向**转接线 | 3 | 板子附带，HL-2915 版要用 |
 
 打印件来自 Pollen Robotics 的 Microduck 原版，我们改了脸（装摄像头和 ToF）和头壳（散热孔、两个麦克风孔），详见 [打印说明](https://github.com/Animan-AI/DuckBuddy/blob/main/hardware/print/README.md)。
 

@@ -19,7 +19,7 @@ lead: 从一张空 TF 卡开始，做到机器鸭能站起来、用手柄走路�
 | 机器人 | 锂电池 | HL-2915 用 3S，充满 12.6 V（LiHV 13.05 V）；HD-1910 用 2S，充满 8.4 V，别用 LiHV 充到 8.7 V。节数不对时，舵机不会上力 |
 | 存储 | TF 卡 16 GB 以上 + 读卡器 | 镜像约 9.5 GB |
 | 电脑 | Windows 10/11 | 和机器鸭连在同一个 WiFi 里 |
-| 电脑 | 系统镜像 | `DuckBuddy-opizero3w-trixie-日期.img` 和它的 `.sha256`，下载见[首页](index.html#download) |
+| 电脑 | 系统镜像 | `DuckBuddy-opizero3w-trixie-日期.img` 和它的 `.sha256`，从[百度网盘](https://pan.baidu.com/s/1n_kGYn8liX8YniRDvvMkiA?pwd=nway)下载（提取码 `nway`）。网盘里的 Orange Pi 官方原版镜像用不到 |
 | 电脑 | balenaEtcher | 烧卡软件，[etcher.balena.io](https://etcher.balena.io) |
 | 电脑 | Python 3.11 以上 | 装好后运行 `pip install pyserial mujoco numpy Pillow` |
 | 电脑 | DuckBuddy 仓库 | 从 [github.com/Animan-AI/DuckBuddy](https://github.com/Animan-AI/DuckBuddy) 下载：用 `git clone`，或点 Code → Download ZIP 后解压。工作台在 `tools/bringup`，零位标定还要用到 `tools/joint_align` |
