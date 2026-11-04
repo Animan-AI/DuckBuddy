@@ -24,7 +24,7 @@ MEDIA = ["demo.gif", "wechat-group.png", "arch-software-zh.png", "arch-hardware-
 # empty: the home page says to ask in the group.
 IMAGE_URL = "https://pan.baidu.com/s/1n_kGYn8liX8YniRDvvMkiA?pwd=nway"
 IMAGE_CODE = "nway"
-NAV = [("index", "首页"), ("bom", "物料清单"), ("tutorial", "新手教程")]
+NAV = [("index", "首页"), ("bom", "物料清单"), ("assembly", "组装说明"), ("tutorial", "新手教程")]
 
 
 def front_matter(text: str) -> tuple[dict, str]:
@@ -80,6 +80,7 @@ def main():
         shutil.copy2(HERE / f, OUT / f)
     for f in MEDIA:
         shutil.copy2(REPO / "docs" / "media" / f, OUT / "media" / f)
+    shutil.copytree(HERE / "img", OUT / "img")      # the site's own photos (assembly)
     (OUT / ".nojekyll").write_text("")
     print(f"built {OUT}")
 
