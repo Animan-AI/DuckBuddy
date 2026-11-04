@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESCRIPTION}}">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESCRIPTION}}">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="bar">
+    <a class="brand" href="index.html"><span class="logo" aria-hidden="true">🦆</span>DuckBuddy</a>
+    <nav class="site-nav">{{NAV}}<a href="https://github.com/Animan-AI/DuckBuddy" class="gh">GitHub</a></nav>
+  </div>
+</header>
+<main class="{{MAIN_CLASS}}">
+{{TOC}}
+<div class="content">
+{{BODY}}
+</div>
+</main>
+<footer class="site-footer">
+  <p>DuckBuddy · 作者 Animan · <a href="https://github.com/Animan-AI/DuckBuddy/blob/main/LICENSE">Apache-2.0</a></p>
+  <p class="muted">基于 Pollen Robotics 的 <a href="https://github.com/pollen-robotics/microduck">Microduck</a>，是独立的社区项目，不隶属于 Pollen Robotics，也未获其背书。</p>
+</footer>
+</body>
+</html>

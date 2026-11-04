@@ -1,0 +1,100 @@
+---
+title: DuckBuddy
+lead: 开源的具身智能机器鸭：能走、能听、能看，有自己的生活。
+home: true
+---
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">开源 · 可复刻 · 全部跑在机器人身上</p>
+    <h1>DuckBuddy</h1>
+    <p class="tagline">一只能走能跑、听得懂名字、会自己找事做的小机器鸭。</p>
+    <p class="sub">约 25 cm 高，15 个舵机，Orange Pi Zero 3W 主控。运动、感知、语音和生命层都在它自己身上运行，不依赖手机或云端。</p>
+    <div class="cta">
+      <a class="btn primary" href="tutorial.html">新手教程</a>
+      <a class="btn" href="bom.html">物料清单</a>
+      <a class="btn ghost" href="https://github.com/Animan-AI/DuckBuddy">GitHub 仓库</a>
+    </div>
+  </div>
+  <figure class="hero-media">
+    <img src="media/demo.gif" alt="DuckBuddy 听语音指令连续做几个动作（3 倍速）" width="480" height="270">
+    <figcaption>说一串指令，它连续完成几个动作（3 倍速）。<a href="https://github.com/Animan-AI/DuckBuddy/raw/main/docs/media/demo.mp4">看带声音的视频</a></figcaption>
+  </figure>
+</section>
+
+<section class="features" aria-label="它能做什么">
+  <article>
+    <h3>🦆 运动</h3>
+    <p>强化学习策略按我们的舵机重新训练：走路、摔倒后站起、坐下 / 站起。50 Hz 控制，摔倒、过热、低电量、失联都会自动保护。</p>
+  </article>
+  <article>
+    <h3>👂 听</h3>
+    <p>离线语音识别，带降噪和人声检测。头上两个麦克风能判断声音从哪边来，叫它一声，它会转头看你。</p>
+  </article>
+  <article>
+    <h3>👀 看</h3>
+    <p>看人脸、注意到动的东西，自然地转头去看；举起手机的 WiFi 二维码，它就能连上网。</p>
+  </article>
+  <article>
+    <h3>💗 生命层</h3>
+    <p>有需求和情绪，会累、会休息，会照顾自己的舵机温度。用“鸭语”回应你；名字和性格写在一个文件里，换一份就是另一只鸭子。</p>
+  </article>
+</section>
+
+<section class="steps">
+  <h2>做一只 DuckBuddy</h2>
+  <ol class="path">
+    <li><a href="bom.html"><b>备料</b><span>舵机、主控、两块扩展板、电池、传感器和打印件</span></a></li>
+    <li><a href="https://github.com/Animan-AI/DuckBuddy/tree/main/hardware/print"><b>打印与组装</b><span>拓竹工程文件已排好 6 个打印盘</span></a></li>
+    <li><a href="tutorial.html#step1"><b>烧录系统</b><span>一张 TF 卡，镜像里已装好全部软件</span></a></li>
+    <li><a href="tutorial.html#step4"><b>工作台标定</b><span>板级测试、关节映射、零位标定，都在网页里完成</span></a></li>
+    <li><a href="tutorial.html#step8"><b>站起来</b><span>打开服务，叫它的名字，用手柄带它散步</span></a></li>
+  </ol>
+</section>
+
+<section class="versions">
+  <h2>两个版本</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>3S 版 · HL-2915</h3>
+      <p>15 只飞特 HL-2915 舵机 + 3S 锂电池。走路、起立、坐下都已训练好，是目前的主力版本。</p>
+    </div>
+    <div class="card">
+      <h3>2S 版 · HD-1910</h3>
+      <p>15 只飞特 HD-1910 舵机 + 2S 锂电池。舵机更便宜，能走路，坐下的动作还在训练。系统里一条 <code>duck-model hd1910</code> 就能切换。</p>
+    </div>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <h2>下载</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>系统镜像</h3>
+      <p>Orange Pi Zero 3W 用的 DuckBuddy 系统（Debian trixie，约 9.5 GB），同时附带 <code>.sha256</code> 校验文件。</p>
+      <p>{{IMAGE_LINK}}</p>
+    </div>
+    <div class="card">
+      <h3>源码与打印件</h3>
+      <p>全部软件、训练代码、工作台和 3D 打印工程都在 GitHub，Apache-2.0 许可。</p>
+      <p><a href="https://github.com/Animan-AI/DuckBuddy">github.com/Animan-AI/DuckBuddy</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="arch">
+  <h2>它是怎么搭起来的</h2>
+  <p>感知（声音、视觉、距离）把事件交给生命层 lifed；lifed 决定看哪里、做什么、说什么，再交给唯一直接驱动舵机的 robotd。所有服务都在 Orange Pi 上独立运行。</p>
+  <figure><img src="media/arch-software-zh.png" alt="软件架构" loading="lazy"></figure>
+  <figure><img src="media/arch-hardware-zh.png" alt="硬件架构" loading="lazy"></figure>
+</section>
+
+<section class="community" id="community">
+  <h2>交流群</h2>
+  <div class="community-body">
+    <img src="media/wechat-group.png" alt="DuckBuddy 交流群微信二维码" width="220" loading="lazy">
+    <div>
+      <p>玩法、组装、调试、训练，都欢迎进群聊。需要焊好的扩展板，也可以在群里联系。</p>
+      <p class="muted">群二维码每周更新；过期了请在 GitHub 提 <a href="https://github.com/Animan-AI/DuckBuddy/issues">Issue</a>，我们会尽快换新的。</p>
+    </div>
+  </div>
+</section>
