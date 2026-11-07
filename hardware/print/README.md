@@ -1,5 +1,15 @@
 # 打印件 / Printed parts
 
+## 按舵机型号下载 / Download by servo model
+
+| 舵机 / Servo | 打印工程 / Bambu Studio project |
+| --- | --- |
+| HL-2915（3S） | [DuckBuddy_2915.3mf](DuckBuddy_2915.3mf) |
+| HD-1910（2S） | [DuckBuddy_1910.3mf](DuckBuddy_1910.3mf) |
+
+以下为旧版 `DuckBuddy.3mf` 的说明和历史记录。  
+The notes below describe the earlier `DuckBuddy.3mf` project.
+
 `DuckBuddy.3mf` 是整机打印件的拓竹 Bambu Studio 工程，共 6 个打印盘：外观件、头部、轮子、TPU 软件、结构件（含加了散热孔和麦克风孔的头部上壳），以及一根 BAM 摆臂。零件来自 Microduck 原版的打印件，有以下修改：
 
 - **头部前脸（face_part）**：改了安装位，用来装 **8×8 ToF 模块**（VL53L5CX 类）和 **IMX219 摄像头模组**；
