@@ -57,7 +57,8 @@ DuckBuddy 有两个版本，除舵机、电池和两处焊接外，其余零件�
 
 | 零件 | 规格 | 数量 | 说明 |
 |---|---|---|---|
-| 打印件 | 仓库里的 [`hardware/print/DuckBuddy.3mf`](https://github.com/Animan-AI/DuckBuddy/tree/main/hardware/print) | 1 套 | 拓竹 Bambu Studio 工程，6 个打印盘，参数已设好 |
+| 打印件 · 2915（3S） | [下载 `DuckBuddy_2915.3mf`](https://github.com/Animan-AI/DuckBuddy/raw/refs/heads/main/hardware/print/DuckBuddy_2915.3mf) | 1 套 | 对应型号的 Bambu Studio 打印工程 |
+| 打印件 · 1910（2S） | [下载 `DuckBuddy_1910.3mf`](https://github.com/Animan-AI/DuckBuddy/raw/refs/heads/main/hardware/print/DuckBuddy_1910.3mf) | 1 套 | 对应型号的 Bambu Studio 打印工程 |
 | 打印耗材 | PETG；脚底、软嘴等软件用 TPU | 适量 | 0.2 mm 层高、2 圈墙、30% 填充、开支撑 |
 | 轴承 | 深沟球轴承 16 × 22 × 4 mm（6706ZZ） | 11 | 关节转轴 |
 | 轴承 | 深沟球轴承 10 × 15 × 3 mm | 3 | 关节转轴 |
