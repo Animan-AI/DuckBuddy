@@ -253,7 +253,7 @@ flowchart LR
 | `tools/` | Python 服务：`lifed`、`voiced`、`visiond`、`duckweb`、`duckbrain`、`persona`，装机工作台 `bringup`，以及实机测试脚本 |
 | `firmware/imu-feetech` | IMU 板固件（STM32G031 + LSM6DSV16X，走飞特协议） |
 | `training/` | HL-2915 训练任务、执行器辨识（BAM）、评测脚本、训练好的策略 |
-| `hardware/` | 打印工程（`hardware/print`）、训练用的机器人模型（`hardware/rev-a/mjcf`） |
+| `hardware/` | 打印工程（`hardware/print`）、训练用的机器人模型（`hardware/rev-a/mjcf`）、[小黑 HD-1910 仿真模型](hardware/rev-a/mjcf-hd1910/) |
 | `docs/` | 硬件接口（`docs/hardware`），以及 Microduck 原有的设计文档和使用说明 |
 
 </details>
