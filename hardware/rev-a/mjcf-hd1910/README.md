@@ -13,3 +13,7 @@ python -m mujoco.viewer --mjcf=hardware/rev-a/mjcf-hd1910/scene_walk.xml
 ```
 
 网格与原始模型基于 Pollen Robotics 的 Microduck。
+
+## 行走策略
+
+[HD-1910 行走策略（Kp 16，checkpoint 6500）](../../../training/policies/hd1910_walk_kp16_6500.onnx) 是 `-r3` 镜像为 HD-1910（2S）配置的基线策略。加载 ONNX 时需沿用 DuckBuddy 控制器的观测与动作接口。
