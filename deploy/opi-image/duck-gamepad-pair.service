@@ -1,0 +1,12 @@
+[Unit]
+Description=DuckBuddy Bluetooth gamepad pairing
+Requires=bluetooth.service
+After=bluetooth.service
+
+[Service]
+ExecStart=/usr/local/sbin/duck-gamepad-pair
+RuntimeDirectory=duck-gamepad
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

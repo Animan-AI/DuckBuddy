@@ -259,6 +259,42 @@ class bus_session:
 
 # ---- 总览 --------------------------------------------------------------------------------------
 
+def op_gamepad_pair(args):
+    status_path = "/run/duck-gamepad/status.json"
+    if not os.path.isfile("/usr/local/sbin/duck-gamepad-pair"):
+        raise RuntimeError("当前镜像没有手柄自动配对服务")
+    request = args.get("request")
+    if not request:
+        try:
+            with open(status_path, encoding="utf-8") as f:
+                current = json.load(f)
+        except FileNotFoundError:
+            current = {}
+        if current.get("state") in ("scanning", "pairing"):
+            return dict(current, request=current.get("request") or "boot")
+        request_path = os.path.expanduser("~/.duck-pair-gamepad")
+        while True:
+            try:
+                with open(request_path, "x") as f:
+                    request = os.fstat(f.fileno()).st_mtime_ns
+                break
+            except FileExistsError:
+                try:
+                    request = os.lstat(request_path).st_mtime_ns
+                    break
+                except FileNotFoundError:
+                    continue
+        return dict(state="queued", request=str(request))
+    try:
+        with open(status_path, encoding="utf-8") as f:
+            result = json.load(f)
+    except FileNotFoundError:
+        result = {}
+    if (result.get("request") or "boot") != request:
+        return dict(state="queued")
+    return result
+
+
 def op_hello(args):
     bus = bus_cfg()
     unit = args.get("unit", "robotd-dev")

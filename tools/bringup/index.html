@@ -140,6 +140,7 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
     <div class="card">
       <h2>机器人</h2>
       <div class="row"><button id="ov-refresh" class="primary">刷新</button>
+      <button id="ov-pair">配对新手柄</button>
         <button id="ov-reconnect">重连代理</button></div>
       <table class="kv" id="ov-robot"></table>
       <h2>robotd</h2>
@@ -539,6 +540,18 @@ async function refresh() {
     JOINTS.map((n, i) => `<tr><td>${JOINT_CN[i]}</td><td>${ids[i] ?? "—"}</td><td>${(b.joint_signs || [])[i] ?? ""}</td><td>${(b.joint_offsets || [])[i] ?? ""}</td></tr>`).join("");
   testWarn();
 }
+$("ov-pair").onclick = e => busy(e.target, async () => {
+  if (!confirm("请把目标手柄切到 Xbox 模式并让指示灯快闪，然后开始配对。")) return;
+  let result = await call("gamepad_pair");
+  const request = result.request;
+  toast("配对请求已发送，请保持手柄快闪");
+  const deadline = Date.now() + 265000;
+  while (result.state !== "done" && result.state !== "failed" && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    result = await call("gamepad_pair", {request});
+  }
+  toast(result.msg || "等待配对结果超时，请检查鸭子的蓝牙服务", result.state !== "done");
+});
 $("ov-refresh").onclick = e => busy(e.target, refresh);
 $("ov-reconnect").onclick = e => busy(e.target, async () => { await post("/api/agent/restart", {target: "robot"}); await refresh(); });
 $("rd-stop").onclick = e => busy(e.target, async () => {

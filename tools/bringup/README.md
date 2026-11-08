@@ -70,3 +70,18 @@ python tools/bringup/app.py --host orangepi@192.168.1.50 --com COM11      # 用 
 
 - 摄像头测试从不调用 `v4l2-ctl --list-ctrls`，那条命令会把板子卡死。vin 驱动没加载时，要先运行 `sudo modprobe -a vin_io imx219 vin_v4l2`。
 - visiond 在跑时摄像头被它占着，摄像头测试会报占用。
+
+## 蓝牙手柄配对
+
+`-r3` 镜像已安装配对服务。尚未配对时，开机后让 Xbox 模式的 BR/EDR 手柄进入快闪状态，鸭子会在约 90 秒的扫描窗口内尝试配对。配对后，开机按手柄 Home 键回连。换手柄时，在工作台「总览」点「配对新手柄」。工作台通过 SSH 发送请求，首次开机自动配对由板端服务独立完成。
+
+已有的 Orange Pi Debian 系统可以保留。在主控上以 `orangepi` 登录，进入 DuckBuddy 仓库目录，安装板端服务：
+
+```bash
+sudo apt install bluez python3-dbus python3-gi
+sudo install -m 755 deploy/opi-image/duck-gamepad-pair.py /usr/local/sbin/duck-gamepad-pair
+sudo install -m 644 deploy/opi-image/duck-gamepad-pair.service /etc/systemd/system/
+sudo systemctl enable --now duck-gamepad-pair.service
+```
+
+服务启动时会立即检查已有配对记录。旧系统仍需具备可用的蓝牙适配器及手柄所需的内核驱动（如 `uhid`、`hidp`）；服务只负责配对。工作台的舵机、标定和体检功能仍需要主控具备各自的驱动、配置或服务。
