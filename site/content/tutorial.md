@@ -231,6 +231,28 @@ duck-model hd1910
 
 ## 第九步：手柄与名字 {#step9}
 
+### 用工作台配对手柄
+
+**已刷 `-r2` 的用户可以保留现有系统。** `-r2` 已有蓝牙驱动和兼容设置，需要先在鸭子上安装一次配对服务，再用最新版工作台操作。
+
+1. 让电脑和鸭子连到同一局域网，按[第三步](#step3)配置 SSH 登录。用 `ssh orangepi@鸭子的IP` 登录，在鸭子的终端执行以下命令。已有仓库时，在现有仓库更新到最新版后，从 `sudo apt install` 开始执行。
+
+   ```bash
+   git clone https://github.com/Animan-AI/DuckBuddy.git
+   cd DuckBuddy
+   sudo apt install bluez python3-dbus python3-gi
+   sudo install -m 755 deploy/opi-image/duck-gamepad-pair.py /usr/local/sbin/duck-gamepad-pair
+   sudo install -m 644 deploy/opi-image/duck-gamepad-pair.service /etc/systemd/system/
+   sudo systemctl enable --now duck-gamepad-pair.service
+   ```
+
+2. 在电脑上更新 DuckBuddy 仓库，按[第四步](#step4)重新打开工作台。把手柄切到 Xbox 模式并让灯快闪，再在「总览」点「配对新手柄」，等待页面显示结果。服务刚启动时可能已经在扫描，此时按钮会显示本轮配对结果。
+3. 配对后，鸭子下次开机时按手柄的 Home 键回连。手柄控制功能按[第八步](#step8)完成标定后启用。
+
+**已刷 `-r3` 的用户**可以在首次开机的约 90 秒扫描窗口内直接让手柄快闪。换手柄或错过窗口时，使用工作台「配对新手柄」。自动配对和重启回连仍待实机验证。
+
+### 用终端手动配对
+
 **配对手柄（只需做一次）。** 把手柄切到 Xbox 模式并进入配对状态（灯快闪），然后在鸭子上运行 `bluetoothctl`，依次输入：
 
 ```bash
