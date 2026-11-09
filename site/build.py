@@ -22,8 +22,8 @@ OUT = HERE / "_site"
 MEDIA = ["demo.gif", "wechat-group.png", "arch-software-zh.png", "arch-hardware-zh.png"]
 # Where the system image can be downloaded (a Baidu Netdisk share, with its extraction code);
 # empty: the home page says to ask in the group.
-IMAGE_URL = "https://pan.baidu.com/s/1n_kGYn8liX8YniRDvvMkiA?pwd=nway"
-IMAGE_CODE = "nway"
+IMAGE_URL = "https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh"
+IMAGE_CODE = "njvh"
 NAV = [("index", "首页"), ("bom", "物料清单"), ("assembly", "组装说明"), ("tutorial", "新手教程")]
 
 
