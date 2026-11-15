@@ -150,6 +150,10 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
         <button id="rd-start">启动 robotd</button>
       </div>
       <div class="note">robotd 占着舵机总线：舵机页、总线和 IMU 测试要先停它；零位标定要它在跑。<b>停 robotd 不会卸力</b>。</div>
+      <h2>行走与手柄</h2>
+      <div id="ov-driving" class="muted">—</div>
+      <p class="note">「回 home」只摆站姿。完成关节映射和零位标定后，点「启用整机服务」加载行走策略并启动手柄服务。手柄连上后按 Start 启用行走，左摇杆控制前进和后退。</p>
+      <button id="ov-enable-services" hidden>启用整机服务</button>
     </div>
     <div class="card">
       <h2>飞特 USB 调试板（电脑上）</h2>
@@ -535,6 +539,8 @@ async function refresh() {
   $("ov-robotd").innerHTML = h.robotd_pids?.length
     ? `运行中，PID <b>${h.robotd_pids.join(", ")}</b>；单元 ${esc(h.robotd_unit)} = ${esc(h.robotd_unit_state)}`
     : `没在跑（单元 ${esc(h.robotd_unit)} = ${esc(h.robotd_unit_state)}）`;
+  $("ov-driving").textContent = `手柄服务：${h.services?.includes("padd") ? "运行中" : "未运行"} · 配置的行走策略：${h.walk_policy || "未配置"}`;
+  $("ov-enable-services").hidden = !h.duck_services_available;
   const ids = b.joint_ids || [];
   $("ov-joints").innerHTML = "<tr><th>关节</th><th>ID</th><th>sign</th><th>offset</th></tr>" +
     JOINTS.map((n, i) => `<tr><td>${JOINT_CN[i]}</td><td>${ids[i] ?? "—"}</td><td>${(b.joint_signs || [])[i] ?? ""}</td><td>${(b.joint_offsets || [])[i] ?? ""}</td></tr>`).join("");
@@ -560,6 +566,11 @@ $("rd-stop").onclick = e => busy(e.target, async () => {
   const r = await call("robotd_stop", {pid: HELLO.robotd_pids[0]}); toast(r.msg); await refresh();
 });
 $("rd-start").onclick = e => busy(e.target, async () => { const r = await call("robotd_start"); toast(r.msg); await refresh(); });
+$("ov-enable-services").onclick = e => busy(e.target, async () => {
+  if (!confirm("关节映射和零位标定已完成，鸭子已托稳？启用整机服务时可能重启 robotd。")) return;
+  const r = await call("enable_duck_services", {}, "robot", 75);
+  toast(r.msg); await refresh();
+});
 $("estop").onclick = async () => {
   for (const t of ["robot"].concat(INFO.com ? ["usb"] : [])) {
     try { const r = await call("relax_all", {}, t, 15); toast(`${t === "robot" ? "机器人" : "USB"}：${r.msg}`); }
@@ -582,18 +593,30 @@ function svBaud() { return $("sv-baud").value === "all" ? 500000 : +$("sv-baud")
 function svArgs(extra) { return Object.assign({baud: SEL?.baud ?? svBaud()}, mpcArg(), extra || {}); }
 function svCall(op, args, timeout) { return call(op, svArgs(args), $("sv-target").value, timeout); }
 
-$("sv-target").onchange = () => { $("sv-baud").value = $("sv-target").value === "usb" ? "1000000" : "500000"; };
+function clearServoScan() {
+  SEL = null;
+  $("sv-detail").style.display = "none";
+  $("sv-regs").innerHTML = "";
+  $("sv-table").innerHTML = "";
+}
+$("sv-target").onchange = () => {
+  clearServoScan();
+  $("sv-baud").value = $("sv-target").value === "usb" ? "1000000" : "500000";
+};
 $("sv-scan").onclick = e => busy(e.target, async () => {
-  const usb = $("sv-target").value === "usb";
+  clearServoScan();
+  const target = $("sv-target").value;
+  const usb = target === "usb";
   const all = $("sv-baud").value === "all";
   if (all && !usb) return toast("机器人总线上只扫一个波特率（1M 在 OPi 上实际 750k）", true);
   const args = Object.assign({lo: +$("sv-lo").value, hi: +$("sv-hi").value}, mpcArg(),
     all ? {bauds: [1000000, 500000, 250000, 115200]} : {baud: svBaud()});
-  const r = await call("scan", args, $("sv-target").value, 180);
+  const r = await call("scan", args, target, 180);
   let found = r.found;
   if ($("sv-imu").checked && !usb && !all && args.hi < 200) {
     try { const r2 = await call("scan", Object.assign({}, args, {lo: 200, hi: 200}), "robot"); found = found.concat(r2.found); } catch (e) {}
   }
+  if ($("sv-target").value !== target) return;
   renderScan(found);
   toast(`找到 ${found.length} 个设备`);
 });
@@ -615,9 +638,12 @@ function renderScan(found) {
 async function openServo() {
   $("sv-detail").style.display = ""; $("sv-result").innerHTML = "";
   $("sv-title").textContent = `ID ${SEL.id} ${jointOf(SEL.id)} · ${SEL.baud} bps · ${$("sv-target").value === "usb" ? "USB 调试板" : "机器人总线"}`;
-  $("sv-newid").value = SEL.id;
+  const selected = SEL;
+  $("sv-newid").value = selected.id;
+  $("sv-regs").innerHTML = "";
   try {
-    const r = await svCall("read_regs", {id: SEL.id});
+    const r = await svCall("read_regs", {id: selected.id});
+    if (SEL !== selected) return;
     $("sv-regs").innerHTML = `<tr><th>地址</th><th>名称</th><th>值</th><th></th></tr>` + r.regs.map(g => {
       const ed = g.kind !== "ro" && g.addr !== 5 && g.addr !== 6;
       return `<tr><td>${g.addr}</td><td>${esc(g.name)}${g.kind === "ee" ? ' <span class="muted">EEPROM</span>' : ""}</td>
@@ -637,7 +663,10 @@ $("sv-reread").onclick = e => busy(e.target, openServo);
 $("sv-setid").onclick = e => busy(e.target, async () => {
   const n = +$("sv-newid").value;
   if (!confirm(`ID ${SEL.id} 改成 ${n}？（写 EEPROM）`)) return;
-  const r = await svCall("set_id", {id: SEL.id, new_id: n}); toast(r.msg); SEL.id = r.id; $("sv-scan").click();
+  const selected = SEL;
+  const r = await svCall("set_id", {id: selected.id, new_id: n});
+  toast(r.msg, !r.ok);
+  if (SEL === selected) $("sv-scan").click();
 });
 $("sv-setbaud").onclick = e => busy(e.target, async () => {
   const to = +$("sv-newbaud").value;
@@ -718,11 +747,14 @@ async function mpWiggle(id, label) {
   MP_OK = true;
   mpNow(`正在摆 <b>ID ${id}</b>${label ? "（" + esc(label) + "）" : ""}……看哪个关节在动`);
   try { return await call("wiggle", mpArgs({id}), MP.target, 30); }
-  catch (e) { mpNow(`ID ${id}：${esc(e.message)}`, true); return null; }
+  catch (e) { mpNow(MP.cur === id && e.message.includes("（多圈计数）") ? `ID ${id}：点下面的实际关节直接登记。` : `ID ${id}：${esc(e.message)}`, true); return null; }
 }
 async function mpPick(id) {
-  if (MP.multi.includes(id)) return toast(`ID ${id} 读数是多圈计数，断舵机电再上电后重新扫描`, true);
   MP.cur = id; mpRender();
+  if (MP.multi.includes(id)) {
+    mpNow(`ID ${id}：点下面的实际关节直接登记。`);
+    return;
+  }
   const r = await mpWiggle(id);
   if (!r || MP.cur !== id) return;
   const j = MP.map.indexOf(id);

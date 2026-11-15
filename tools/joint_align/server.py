@@ -252,6 +252,10 @@ class Calib:
             if not self.loaded:
                 return False, "配置还没读到"
             signs, offsets = list(self.signs), list(self.offsets)
+        invalid = [f"{JOINT_CN[name]}（{offset}）" for name, offset in zip(JOINT_NAMES, offsets)
+                   if abs(offset) > 2048]
+        if invalid:
+            return False, "零位偏移超出 ±2048，未写入：" + "、".join(invalid)
         try:
             out = subprocess.run(["ssh", "-o", "BatchMode=yes", self.host, "python3", "-", self.path,
                                   "'" + json.dumps(signs) + "'", "'" + json.dumps(offsets) + "'"],
@@ -367,9 +371,45 @@ class Renderer:
                 done.put(b"")
 
 
-def make_handler(live, renderer, demo, calib):
+def make_handler(live, renderer, demo, calib, hold_call=None):
     page = open(os.path.join(HERE, "index.html"), encoding="utf-8").read()
     slider = {"joints": list(HOME)}
+    hold_lock = threading.Lock()
+    held_degrees = None
+
+    def adjust_hold(body):
+        nonlocal held_degrees
+        if body.get("release"):
+            hold_call("calibration_hold", {"release": True})
+            if body.get("apply") and held_degrees is not None:
+                with calib.lock:
+                    calib.offsets = [
+                        o + s * round(math.radians(d) / RAD_PER_COUNT)
+                        for o, s, d in zip(calib.offsets, calib.signs, held_degrees)
+                    ]
+            held_degrees = None
+            return "已卸力" + ("，微调已应用，请写入配置" if body.get("apply") else "")
+        with calib.lock:
+            if not calib.loaded:
+                raise ValueError("配置还没读到")
+            offsets, signs = list(calib.offsets), list(calib.signs)
+        if "i" in body:
+            i, degrees = int(body["i"]), float(body["deg"])
+            if held_degrees is None or not 0 <= i < len(JOINT_NAMES) or not -10 <= degrees <= 10:
+                raise ValueError("请先上力到零位，滑轨范围为 ±10°")
+            updated = list(held_degrees)
+            updated[i] = degrees
+            indices = [i]
+        else:
+            updated = [0.0] * len(JOINT_NAMES)
+            indices = range(len(JOINT_NAMES))
+        targets = {i: 2048 + offsets[i] + signs[i] * round(math.radians(updated[i]) / RAD_PER_COUNT)
+                   for i in indices}
+        if any(abs(target - 2048) > 2048 for target in targets.values()):
+            raise ValueError("微调后的零位超出 ±2048，请先处理零点跳变")
+        hold_call("calibration_hold", {"targets": targets})
+        held_degrees = updated
+        return "已到位并保持"
 
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -401,7 +441,8 @@ def make_handler(live, renderer, demo, calib):
                 body = dict(names=JOINT_NAMES, cn=[JOINT_CN[n] for n in JOINT_NAMES], joints=joints,
                             home=HOME, gravity=gravity, pitch=pitch, roll=roll, demo=demo,
                             age=time.time() - stamp if stamp else None, status=status, policy=policy,
-                            calib=calib.snapshot() if calib else dict(ready=False, msg="演示模式"))
+                            calib=calib.snapshot() if calib else dict(ready=False, msg="演示模式"),
+                            hold_available=bool(hold_call), held_degrees=held_degrees)
                 return self._send(json.dumps(body).encode(), "application/json")
             if u.path == "/frame":
                 joints, gravity, *_ = self._pose()
@@ -418,12 +459,37 @@ def make_handler(live, renderer, demo, calib):
             u = urlparse(self.path)
             n = int(self.headers.get("Content-Length", "0"))
             body = json.loads(self.rfile.read(n) or b"{}")
+            if u.path in ("/hold", "/center-all") and hold_call:
+                with hold_lock:
+                    try:
+                        if u.path == "/center-all":
+                            if held_degrees is not None:
+                                raise ValueError("请先卸力并结束滑轨微调")
+                            with calib.lock:
+                                if not calib.loaded:
+                                    raise ValueError("配置还没读到")
+                                signs = list(calib.signs)
+                            rebased = hold_call("center_calibration", {"signs": signs})
+                            with calib.lock:
+                                calib.offsets = list(rebased["offsets"])
+                                calib.loaded = (signs, list(calib.offsets))
+                                calib.msg = rebased["msg"]
+                            msg = rebased["msg"] + "；回总览启动 robotd，再检查站姿"
+                        else:
+                            msg = adjust_hold(body)
+                        result = dict(ok=True, msg=msg)
+                    except (RuntimeError, ValueError, KeyError, subprocess.SubprocessError) as error:
+                        result = dict(ok=False, msg=str(error))
+                return self._send(json.dumps(result).encode(), "application/json")
             if u.path == "/demo_pose" and demo:
                 j = body.get("joints")
                 if isinstance(j, list) and len(j) == 15:
                     slider["joints"] = [float(x) for x in j]
                 return self._send(b"{}", "application/json")
             if calib and u.path in ("/flip", "/nudge", "/zero", "/reset", "/save"):
+                if held_degrees is not None or hold_lock.locked():
+                    return self._send(json.dumps(dict(ok=False, msg="请先卸力并结束滑轨微调")).encode(),
+                                      "application/json")
                 ok, msg = True, ""
                 if u.path == "/flip":
                     calib.flip(int(body["i"]))

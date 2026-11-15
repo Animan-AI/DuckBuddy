@@ -189,8 +189,9 @@ def firmware_info():
 class Calibration:
     """零位标定：在 端口+1 上起 tools/joint_align 的服务（同一份代码、同一个页面）。"""
 
-    def __init__(self, a):
+    def __init__(self, a, robot):
         self.a = a
+        self.robot = robot
         self.url = None  # 起来后是端口号
         self.lock = threading.Lock()
 
@@ -207,7 +208,8 @@ class Calibration:
             threading.Thread(target=ja.reader, args=(live, self.a.host, False), daemon=True).start()
             calib = ja.Calib(self.a.host, self.a.config, self.a.restart_cmd, self.a.init_cmd)
             threading.Thread(target=calib.load, daemon=True).start()
-            srv = ThreadingHTTPServer((self.a.listen, self.a.port + 1), ja.make_handler(live, ja.Renderer(), False, calib))
+            handler = ja.make_handler(live, ja.Renderer(), False, calib, self.robot.call)
+            srv = ThreadingHTTPServer((self.a.listen, self.a.port + 1), handler)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             self.url = self.a.port + 1
             return self.url
@@ -330,7 +332,7 @@ def main():
     robot = Agent("机器人", ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=5",
                           a.host, f"python3 -u -c '{BOOT}' --config {a.config}"], send_source=True)
     usb_box = {"port": a.com, "agent": None}
-    handler = make_handler(a, robot, usb_box, Calibration(a))
+    handler = make_handler(a, robot, usb_box, Calibration(a, robot))
     if a.com:
         usb_box["agent"] = usb_agent(a.com)
     srv = ThreadingHTTPServer((a.listen, a.port), handler)

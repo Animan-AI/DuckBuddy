@@ -90,6 +90,18 @@ button:disabled{opacity:.45;cursor:default}
       <button id="c-home" class="save" hidden>写入并回 home</button>
     </div>
     <div id="calmsg"></div>
+    <button id="center-all" hidden>当前位置设为全部舵机中位</button>
+    <details id="hold-panel" hidden>
+      <summary>零位上力微调</summary>
+      <p class="help">先托稳鸭子，让关节接近零位，然后在工作台总览停止 robotd。上力后拖动各关节滑轨，松开滑块时发送目标。调整好后托住鸭子卸力，再写入配置。</p>
+      <div class="cal">
+        <button id="hold-start">上力到零位</button>
+        <button id="hold-apply">卸力并应用微调</button>
+        <button id="hold-release">卸力</button>
+      </div>
+      <div id="hold-status" role="status"></div>
+      <div id="hold-rows"></div>
+    </details>
     <table>
       <thead><tr><th>关节</th><th>实机°</th><th>参考°</th><th>差°</th><th>方向</th><th>零点</th><th id="demoh" hidden>演示</th></tr></thead>
       <tbody id="rows"></tbody>
@@ -100,6 +112,74 @@ button:disabled{opacity:.45;cursor:default}
 <script>
 let ref = "zero", sel = null, st = null, demoPose = null;
 const $ = id => document.getElementById(id);
+let holdBusy = false;
+async function hold(body) {
+  holdBusy = true;
+  drawHold();
+  try {
+    const r = await (await fetch("/hold", {method: "POST", body: JSON.stringify(body)})).json();
+    $("hold-status").textContent = r.msg;
+    if (!r.ok) alert(r.msg);
+    st = await (await fetch("/state")).json();
+  } catch (e) {
+    $("hold-status").textContent = "请求失败，请核对舵机状态";
+  } finally {
+    holdBusy = false;
+    draw();
+  }
+}
+function drawHold() {
+  const panel = $("hold-panel");
+  panel.hidden = !st.hold_available;
+  $("center-all").hidden = panel.hidden;
+  if (panel.hidden) return;
+  const active = st.held_degrees !== null;
+  $("center-all").disabled = holdBusy || !st.calib.ready || active;
+  $("hold-start").disabled = holdBusy || !st.calib.ready || active;
+  $("hold-apply").disabled = holdBusy || !active;
+  $("hold-release").disabled = holdBusy;
+  const rows = $("hold-rows");
+  if (!rows.children.length) {
+    st.cn.forEach((name, i) => {
+      const label = document.createElement("label");
+      label.style.display = "flex";
+      label.style.justifyContent = "space-between";
+      label.append(name);
+      const input = document.createElement("input");
+      input.type = "range";
+      input.min = -10;
+      input.max = 10;
+      input.step = 0.5;
+      input.oninput = () => { output.value = input.value + "°"; };
+      input.onchange = () => hold({i, deg: Number(input.value)});
+      const output = document.createElement("output");
+      label.append(input, output);
+      rows.append(label);
+    });
+  }
+  [...rows.children].forEach((row, i) => {
+    const input = row.querySelector("input");
+    input.disabled = holdBusy || !active;
+    if (!input.matches(":focus") || input.disabled) {
+      input.value = st.held_degrees?.[i] ?? 0;
+      row.querySelector("output").value = input.value + "°";
+    }
+  });
+}
+$("hold-start").onclick = () => confirm("鸭子已托稳、各关节接近零位？确认后各关节会上力并移动。") && hold({});
+$("hold-apply").onclick = () => hold({release: true, apply: true});
+$("hold-release").onclick = () => hold({release: true});
+$("center-all").onclick = async () => {
+  if (!confirm("请确认 robotd 已停止、全身已卸力，并把 15 个关节保持在机械零位。将校正舵机中位并保存关节零位配置。")) return;
+  holdBusy = true;
+  drawHold();
+  try {
+    await post("/center-all");
+  } finally {
+    holdBusy = false;
+    drawHold();
+  }
+};
 $("r-zero").onclick = () => { ref = "zero"; $("r-zero").classList.add("on"); $("r-home").classList.remove("on"); refImgs(); zLabels(); draw(); };
 $("r-home").onclick = () => { ref = "home"; $("r-home").classList.add("on"); $("r-zero").classList.remove("on"); refImgs(); zLabels(); draw(); };
 // "设为…"按当前参考：零位记成 0°，站姿 home 记成 home 的角度
@@ -122,6 +202,7 @@ const deg = r => r * 180 / Math.PI;
 
 function draw() {
   if (!st) return;
+  drawHold();
   const tb = $("rows");
   if (!tb.children.length) {
     st.names.forEach((n, i) => {

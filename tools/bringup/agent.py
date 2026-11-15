@@ -21,6 +21,7 @@ import io
 import json
 import math
 import os
+import re
 import shutil
 import socket
 import struct
@@ -296,6 +297,8 @@ def op_gamepad_pair(args):
 
 
 def op_hello(args):
+    if not Ctx.usb:
+        Ctx.config, _ = load_config(Ctx.cfg_path)
     bus = bus_cfg()
     unit = args.get("unit", "robotd-dev")
     info = dict(hostname=socket.gethostname(), python=sys.version.split()[0], usb=Ctx.usb,
@@ -311,11 +314,33 @@ def op_hello(args):
         r = subprocess.run(["systemctl", "--user", "is-active", unit], capture_output=True, text=True)
         info["robotd_unit_state"] = r.stdout.strip()
         info["robotd_socket"] = os.path.exists("/tmp/robotd.sock")
+        info["duck_services_available"] = duck_services_command() is not None
+        info["walk_policy"] = (Ctx.config or {}).get("policy", {}).get("walk")
         busy = {"visiond": "visiond", "tofd": "tofd", "voiced": "voiced", "lifed": "lifed", "duckcam": "duckcam",
                 "padd": "padd"}
         info["services"] = sorted({name for p, c, cmd in procs() for key, name in busy.items()
                                    if c == key or (key + ".py") in cmd})
     return info
+
+
+def duck_services_command():
+    if Ctx.usb or Ctx.cfg_path != os.path.realpath(os.path.expanduser("~/robot/duck.toml")):
+        return None
+    return shutil.which("duck-services")
+
+
+def op_enable_duck_services(args):
+    command = duck_services_command()
+    if not command:
+        raise RuntimeError("当前系统或配置不支持 duck-services")
+    result = subprocess.run([command, "on", "-y"], capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        raise RuntimeError((result.stdout + "\n" + result.stderr).strip() or "启用服务失败")
+    units = ("robotd-dev", "padd-dev")
+    failed = [unit for unit in units if user_unit(unit, "is-active").stdout.strip() != "active"]
+    if failed:
+        raise RuntimeError("这些服务未启动：" + "、".join(failed))
+    return dict(msg="已启用整机服务，robotd 和手柄服务正在运行。按手柄 Start 启用行走。")
 
 
 def op_robotd_stop(args):
@@ -630,6 +655,57 @@ def op_wiggle(args):
                 msg=("中止：" + result if result else ("到位" if ok else "有一步没到位（误差 > 2.5°）")) + "；已松扭矩")
 
 
+def op_calibration_hold(args):
+    """Position-mode bench calibration on the robot bus."""
+    if Ctx.usb:
+        raise BusError("零位上力微调要用机器人总线")
+    Ctx.config, _ = load_config(Ctx.cfg_path)
+    cfg = bus_cfg()
+    ids = cfg.get("joint_ids", [])
+    if len(ids) != 15 or len(set(ids)) != 15 or any(not 0 <= sid < 254 or sid == IMU_ID for sid in ids):
+        raise BusError("请先写好 15 个关节的 ID 映射")
+    release = bool(args.get("release"))
+    targets = {int(i): int(value) for i, value in args.get("targets", {}).items()}
+    if not release and (not targets or any(not 0 <= i < len(ids) or not 0 <= v <= 4095
+                                          for i, v in targets.items())):
+        raise BusError("目标超出舵机单圈范围，请先处理零点跳变")
+    mpc = ma_per_count({})
+    speed, current_ma = 12, 400
+    with bus_session() as bus:
+        if release:
+            failed = [sid for sid in ids if not bus.w8(sid, TORQUE, 0)]
+            if failed:
+                raise BusError(f"卸力未确认，未应答 ID：{failed}")
+            return {"msg": "已卸力"}
+        starts = {}
+        for i, target in targets.items():
+            sid = ids[i]
+            position = bus.pos(sid)
+            if position is None or not 0 <= position <= 4095 or bus.r8(sid, MODE) not in (0, 4):
+                raise BusError(f"ID {sid} 无法读取单圈位置或不在位置模式")
+            if abs(position - target) * DEG_PER_COUNT > 30:
+                raise BusError(f"ID {sid} 离目标超过 30°，请先卸力摆近零位")
+            starts[i] = position
+        try:
+            for i, target in targets.items():
+                sid = ids[i]
+                bus.must(bus.w8(sid, 41, 20), "设置加速度")
+                bus.must(goal(bus, sid, target, max(1, round(current_ma / mpc)), speed), "写标定目标")
+                bus.must(bus.w8(sid, TORQUE, 1), "上扭矩")
+            for i, target in targets.items():
+                sid = ids[i]
+                trace = []
+                problem = watch_move(bus, sid, starts[i], target, mpc, 1.0, 1500, 100,
+                                     trace, time.time(), done_tol=4)
+                if problem or not trace or abs(trace[-1][1] - target) > 4:
+                    raise BusError(f"ID {sid}：{problem or '目标未到位'}")
+        except Exception:
+            for sid in ids:
+                bus.w8(sid, TORQUE, 0)
+            raise
+    return {"msg": "已到位并保持"}
+
+
 def op_center(args):
     """转到同圈最近的中位 2048+4096k 并保持扭矩（装舵盘用）。监督：过流 / 越走越远就切扭矩。"""
     sid = int(args["id"])
@@ -652,6 +728,11 @@ def op_center(args):
     return dict(ok=True, pos=p, target=target, msg=f"到中位 {p}（目标 {target}），扭矩保持中——装好舵盘后点「松扭矩」")
 
 
+def centered_correction(old, position):
+    # Apply position - 2048, then normalize the correction to a signed half-turn.
+    return (old + position) % 4096 - 2048
+
+
 def op_set_center_here(args):
     """把舵机现在的位置记成 2048：改 EEPROM 31（位置校正，BIT15 符号位）。
 
@@ -666,8 +747,7 @@ def op_set_center_here(args):
         if not 0 <= p <= 4095:
             raise BusError(f"读数 {p} 超出 0..4095（多圈计数），断舵机电再上电后再设")
         old = smag(v31)
-        new = old + (p - 2048)
-        new = (new + 2048) % 4096 - 2048  # 等价的偏置取 −2048..2047
+        new = centered_correction(old, p)
         write_reg(bus, sid, 31, new)
         time.sleep(0.05)
         after = bus.pos(sid)
@@ -676,6 +756,83 @@ def op_set_center_here(args):
     return dict(ok=ok, old_offset=old, new_offset=new, pos_before=p, pos_after=after,
                 msg=(f"位置校正 {old} → {new}，现在读数 {after}" if ok
                      else f"没成功：31 读回 {None if back is None else smag(back)}，读数 {after}") + "；扭矩已松")
+
+
+def op_center_calibration(args):
+    """Rebase the full mechanical zero pose and its software offsets together."""
+    if Ctx.usb:
+        raise BusError("批量中位校正要用机器人总线")
+    config, path = load_config(Ctx.cfg_path)
+    ids = (config or {}).get("bus", {}).get("joint_ids", [])
+    signs = args["signs"]
+    if len(ids) != 15 or len(set(ids)) != 15 or any(not 0 <= i <= 252 or i == IMU_ID for i in ids):
+        raise BusError("请先写好 15 个关节的 ID 映射")
+    if len(signs) != 15 or any(s not in (-1, 1) for s in signs):
+        raise BusError("请先核对关节方向")
+    with open(path, encoding="utf-8") as f:
+        original = f.read()
+    suffix = str(time.time_ns())
+    temporary = path + ".center-tmp-" + suffix
+    backup = path + ".bak-center-" + suffix
+    with bus_session() as bus:
+        old, new = {}, {}
+        for sid in ids:
+            if bus.r8(sid, TORQUE) != 0:
+                raise BusError(f"ID {sid} 未确认卸力，请先托稳并卸力")
+            if bus.r16(sid, 3) != 6922:
+                raise BusError(f"ID {sid} 未确认是 HL-2915，批量校正暂仅支持 HL-2915")
+            value, position = bus.r16(sid, 31), bus.pos(sid)
+            if value is None or position is None or not 0 <= position <= 4095:
+                raise BusError(f"ID {sid} 无法读取单圈位置，请先恢复单圈读数")
+            old[sid] = smag(value)
+            new[sid] = centered_correction(old[sid], position)
+        shutil.copy2(path, backup)
+        with open(backup + ".json", "w", encoding="utf-8") as f:
+            json.dump(old, f)
+        attempted = []
+        try:
+            for sid in ids:
+                if new[sid] != old[sid]:
+                    attempted.append(sid)
+                    write_reg(bus, sid, 31, new[sid])
+                    time.sleep(0.05)
+                if bus.r16(sid, 31) != enc(new[sid]) or bus.r8(sid, LOCK) != 1:
+                    raise BusError(f"ID {sid} 位置校正或 EEPROM 锁读回失败")
+            offsets = []
+            for sid in ids:
+                pos = bus.pos(sid)
+                if pos is None or abs(pos - 2048) > 3:
+                    raise BusError(f"ID {sid} 校正后读数为 {pos}，请保持全身机械零位")
+                offsets.append(pos - 2048)
+            text = original
+            for key, values in (("joint_signs", signs), ("joint_offsets", offsets)):
+                formatted = "[" + ", ".join(f"{v:4d}" for v in values).lstrip() + "]"
+                text, count = re.subn(rf"(?m)^({key}[ \t]*=[ \t]*)\[[^\]\n]*\]",
+                                      lambda m: m[1] + formatted, text, count=1)
+                if count != 1:
+                    raise BusError(f"找不到配置项 {key}")
+            with open(temporary, "x", encoding="utf-8") as f:
+                f.write(text)
+                f.flush()
+                os.fsync(f.fileno())
+            shutil.copymode(path, temporary)
+            os.replace(temporary, path)
+        except Exception as error:
+            failed = []
+            for sid in reversed(attempted):
+                try:
+                    write_reg(bus, sid, 31, old[sid])
+                    if bus.r16(sid, 31) != enc(old[sid]) or bus.r8(sid, LOCK) != 1:
+                        failed.append(sid)
+                except Exception:
+                    failed.append(sid)
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+            if failed:
+                raise BusError(f"{error}；这些 ID 回滚未核实：{failed}，备份 {backup}.json") from error
+            raise
+    Ctx.config, _ = load_config(path)
+    return dict(msg="15 只舵机已设中位并写入零位配置", offsets=offsets, backup=backup)
 
 
 def op_torque(args):
