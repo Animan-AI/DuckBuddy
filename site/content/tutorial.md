@@ -76,7 +76,9 @@ lead: 从一张空 TF 卡开始，做到机器鸭能站起来、用手柄走路�
     ssh orangepi@duck-XXXX.local
     ```
 
-    问是否信任时输入 `yes`，密码是 `orangepi`。所有鸭子的初始密码都一样，进去后马上运行 `passwd` 改成你自己的密码。
+    可以把 `duck-XXXX.local` 换成鸭子播报的 IP。第一次连接出现 `Are you sure you want to continue connecting` 时，确认连的是这台鸭子，再输入 `yes`。密码是 `orangepi`。所有鸭子的初始密码都一样，进去后马上运行 `passwd` 改成你自己的密码。
+
+如果工作台报 `Host key verification failed`，先回 PowerShell 用上面的 SSH 命令手动登录一次。重刷后如果提示 `REMOTE HOST IDENTIFICATION HAS CHANGED`，先确认这个地址确实是刚重刷的鸭子，再在电脑上运行 `ssh-keygen -R 鸭子的IP`（使用主机名连接时填该主机名），然后重新登录并确认新密钥。
 
 **HD-1910 版：告诉它舵机型号。** 镜像默认按 HL-2915 设置。HD-1910 的鸭子登录后，先运行一次：
 
@@ -101,7 +103,7 @@ duck-model hd1910
 2. 把公钥放到鸭子上（这一步会问一次鸭子的密码）：
 
     ```powershell
-    type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh orangepi@duck-XXXX.local "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+    Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" | ssh orangepi@duck-XXXX.local 'umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys'
     ```
 
 3. 确认免密生效：
@@ -109,6 +111,8 @@ duck-model hd1910
     ```powershell
     ssh -o BatchMode=yes orangepi@duck-XXXX.local hostname
     ```
+
+    用工作台实际配置的地址测试（IP 或主机名）。直接显示主机名后，再打开工作台或点「重新连接」。如果提示 `Permission denied (publickey)`，检查公钥是否装到这台鸭子的 `orangepi` 账户。
 
     没有问密码、直接打印出 `duck-XXXX`，就成功了。报 `Permission denied`，说明第 2 步没做对。
 
