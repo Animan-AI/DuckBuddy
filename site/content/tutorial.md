@@ -1,22 +1,20 @@
 ---
 title: 新手教程
-lead: 从一张空 TF 卡开始，做到机器鸭能站起来、用手柄走路、听懂自己的名字。
+lead: 从开机、充电、聊天和手柄行走开始，用 AI 做一个小功能。附首次烧卡、配网和标定步骤。
 ---
 
-# 新手教程：烧录系统、开机与配置
+{{GETTING_STARTED_GUIDE}}
 
-做完这份教程，你的机器鸭能站起来、用手柄走路、听懂自己的名字。整个过程约 2–3 小时（不含组装），只需要一台 Windows 电脑，加上在浏览器里使用的 **DuckBuddy 工作台**（装机工具）。
+---
 
-顺序是：烧卡 → 开机连网 → 电脑免密登录 → 打开工作台 → 板级测试 → 关节映射 → 零位标定 → 打开服务、站起来 → 手柄和名字。每一步做完再做下一步：前一步没过，后面都会出问题。
-
-教程适用于两种鸭子：**HL-2915 舵机 + 3S 电池**，和 **HD-1910 舵机 + 2S 电池**。两种的流程一样，只有几处不同。文中标「HD-1910 版」的地方要多看一眼；做 HD-1910 版之前，请先读完后面的[「HD-1910 版要注意」](#hd-1910)一节。
+以下是第一次装机的完整步骤。用 Windows 电脑烧录系统卡，再打开 DuckBuddy 工作台做测试和标定。HD-1910 版先看[这几处装机差异](#hd-1910)。
 
 ## 准备什么 {#prepare}
 
 | 类别 | 东西 | 说明 |
 |---|---|---|
 | 机器人 | 组装好的机器鸭 | Orange Pi Zero 3W + HAT + PDB，15 只 HL-2915 或 HD-1910 舵机，舵机 ID 已设好（1–15）。零件见 [物料清单](bom.html) |
-| 机器人 | 锂电池 | HL-2915 用 3S，充满 12.6 V（LiHV 13.05 V）；HD-1910 用 2S，充满 8.4 V，别用 LiHV 充到 8.7 V。节数不对时，舵机不会上力 |
+| 机器人 | 锂电池 | HL-2915 用普通 3S LiPo，满充 12.6 V。HD-1910 用普通 2S LiPo，满充 8.4 V。详见[充电](#charge) |
 | 存储 | TF 卡 16 GB 以上 + 读卡器 | 镜像约 9.5 GB |
 | 电脑 | Windows 10/11 | 和机器鸭连在同一个 WiFi 里 |
 | 电脑 | 系统镜像 | 从 [GitHub Releases](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8) 下载 r8 的 `.7z` 和 `.img.sha256`。旧版 r4 仍可在[百度网盘](https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh)下载（提取码 `njvh`） |
@@ -359,6 +357,6 @@ exit
 | `ip -4 a show wlan0` | 看 IP |
 | `sudo nmtui` | 连别的 WiFi |
 | `passwd` | 改登录密码 |
-| `sudo poweroff` | 关机。等 10 秒再拔电池；直接拔电可能丢掉最近 10 分钟写的文件 |
+| `sudo poweroff` | 关机。等系统关机后再拔电池，见[关机步骤](#charge) |
 
 工作台的更多用法（新舵机配置向导、IMU 烧录、各项测试的判据）见仓库里的 [`tools/bringup/README.md`](https://github.com/Animan-AI/DuckBuddy/blob/main/tools/bringup/README.md)。

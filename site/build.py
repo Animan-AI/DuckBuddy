@@ -40,6 +40,9 @@ def render(path: Path) -> tuple[dict, str, str]:
     meta, body = front_matter(path.read_text(encoding="utf-8").replace("\r\n", "\n"))
     if path.suffix != ".md":
         return meta, body, ""
+    if path.name == "tutorial.md":
+        guide = (REPO / "docs" / "robot" / "GETTING-STARTED-CN.md").read_text(encoding="utf-8")
+        body = body.replace("{{GETTING_STARTED_GUIDE}}", guide.strip(), 1)
     # superfences: code blocks inside list items (a step's command), which fenced_code does not do
     md = markdown.Markdown(extensions=["tables", "pymdownx.superfences", "attr_list", "toc", "sane_lists"],
                            extension_configs={"toc": {"toc_depth": "2-2"}})
