@@ -67,7 +67,7 @@ DuckBuddy 有两个版本，除舵机、电池和两处焊接外，其余零件�
 | 硅胶减震圈 | M3：内径 3 mm、外径 7 mm、厚 2 mm | 2 | 套在 PDB 的两个大孔里，减震。淘宝搜“穿越机飞控减震圈 硅胶隔离垫片” |
 | 打印垫圈 / 垫柱 | 白色 3D 打印件 | 若干 | PDB 两个小孔背面的垫圈；撑住头里的 Orange Pi 和 HAT |
 | 小风扇 | 给 Orange Pi 散热的小风扇 | 1 | 热熔胶贴在 Orange Pi 侧面，线插 HAT 左上角的风扇座 |
-| 连接线 | HAT ↔ PDB：PH2.0 3P **同向**线（1 对 1） | 1 | **要自己买**，两头都是 PH2.0 3P。**GND 和 DATA 别接反** |
+| 连接线 | HAT J2 ↔ PDB J5 | 1 | **要自己买**。新款 XH 配套用 **反向 XH2.54 3P 双头线**，此前的 PH2.0 配套用同向 PH2.0 3P。按实物插座选一种，再用万用表核线。见[接线图](assembly.html#pdb-hat-wiring) |
 | 转接线（3S 版） | PH1.25 ↔ AMP2.0 3P **同向**转接线 | 3 | 板子附带，HL-2915 版要用 |
 
 打印件来自 Pollen Robotics 的 Microduck 原版，我们改了脸（装摄像头和 ToF）和头壳（散热孔、两个麦克风孔），详见 [打印说明](https://github.com/Animan-AI/DuckBuddy/blob/main/hardware/print/README.md)。

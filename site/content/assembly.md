@@ -5,11 +5,18 @@ lead: 两块扩展板怎么装：躯干里的 PDB/IMU 板，头里的 HAT + Oran
 
 # 组装说明：电路板部分
 
-这一页讲两块电路板的安装：躯干里的 **PDB/IMU 板**，和头里叠在一起的 **HAT + Orange Pi Zero 3W**。舵机、轴承和外壳的装法和 Microduck 原版一样，按打印件装就行。要用的零件见[物料清单](bom.html)。
+这一页讲怎么装躯干里的 **PDB/IMU 板**和头里的 **HAT + Orange Pi Zero 3W**。如果两块板已经装好，可以直接看[两块板怎么连线](#pdb-hat-wiring)。要用的零件见[物料清单](bom.html)。
 
 照片里是一只 HD-1910（2S）版的鸭子；HL-2915（3S）版的板子装法相同，只是舵机线多了 3 根转接线（板子附带）。
 
-<figure class="photo"><img src="img/assembly/parts.jpg" alt="拆开的机器鸭：躯干和腿、头里的电路板、头壳、电池" loading="lazy"><figcaption>全部零件摊开：左上是 2S 电池，中间是装好 HAT 和 Orange Pi 的脸部，下面是装好 PDB 的躯干和两条腿，右边是头壳。</figcaption></figure>
+<figure class="photo annot">
+  <div class="annot-img">
+    <img src="img/assembly/parts.jpg" alt="拆开的机器鸭。上方脸部是 HAT，左下躯干是 PDB，两块板由一根三芯线连接。" loading="lazy">
+    <span class="mark port-label" style="left:36%;top:12%">头部 HAT</span>
+    <span class="mark port-label" style="left:34%;top:61%">躯干 PDB</span>
+  </div>
+  <figcaption>装机照片用于找板子。躯干的 PDB 用 <b>J5（HAT）</b> 接头部的 HAT <b>J2（HEAD/PDB）</b>。选线看下方的接线图。</figcaption>
+</figure>
 
 ## 要准备的零件 {#parts}
 
@@ -19,7 +26,7 @@ lead: 两块扩展板怎么装：躯干里的 PDB/IMU 板，头里的 HAT + Oran
 | M1.8 × 8 自攻螺丝（十字圆头） | 2 | PDB 的两个小孔，背面垫白色 3D 打印垫圈 |
 | 硅胶减震圈，M3 规格：内径 3 mm、外径 7 mm、厚 2 mm | 2 | 套在 PDB 的两个大孔里，减震 |
 | 白色 3D 打印垫圈 / 垫柱 | 若干 | PDB 两个小孔背面的垫圈；头里撑住 Orange Pi 和 HAT 的垫柱 |
-| HAT ↔ PDB 的 PH2.0 3P 同向线 | 1 | **要自己买**：两头都是 PH2.0 3P，同向（1 对 1） |
+| HAT ↔ PDB 三芯连接线 | 1 | **要自己买**。新款 XH 配套用 **反向 XH2.54 3P**，此前的 PH2.0 配套用同向 PH2.0 3P。看[接线图](#pdb-hat-wiring)核对实物 |
 | PH1.25 ↔ AMP2.0 3P 同向转接线（HL-2915 版） | 3 | 板子附带 |
 
 硅胶减震圈在淘宝搜“穿越机飞控减震圈 硅胶隔离垫片”，选 M3 的就是。
@@ -50,7 +57,7 @@ HAT 叠在 Orange Pi Zero 3W 上，两块板一起装在脸部（face_part）里
 
 **先认 HAT 上的插座**（编号对应下面照片里的标记，丝印都印在板子上）：
 
-<figure class="photo annot"><div class="annot-img"><img src="img/assembly/hat-top.jpg" alt="HAT 正面，插座上标了编号：1 风扇、2 ToF、3 左麦克风、4 右麦克风、5 喇叭、6 接 PDB" loading="lazy"><span class="mark" style="left:35.4%;top:22.2%">1</span><span class="mark" style="left:30.4%;top:40.4%">2</span><span class="mark" style="left:37.7%;top:79.7%">3</span><span class="mark" style="left:50%;top:79.7%">4</span><span class="mark" style="left:59.9%;top:59.4%">5</span><span class="mark" style="left:92.5%;top:45.7%">6</span></div><figcaption>HAT 正面：左上角是风扇和 ToF，下面一排是左、右麦克风和喇叭，右边白色 3P 是接 PDB 的 J2。</figcaption></figure>
+<figure class="photo annot"><div class="annot-img"><img src="img/assembly/hat-top.jpg" alt="HAT 正面，标出了风扇、ToF、两个麦克风、喇叭，以及右侧接 PDB 的 J2。" loading="lazy"><span class="mark" style="left:35.4%;top:22.2%">1</span><span class="mark" style="left:30.4%;top:40.4%">2</span><span class="mark" style="left:37.7%;top:79.7%">3</span><span class="mark" style="left:50%;top:79.7%">4</span><span class="mark" style="left:59.9%;top:59.4%">5</span><span class="mark port-label" style="left:90.7%;top:45.7%">6 · J2</span></div><figcaption>HAT 正面。右侧白色三针座是 <b>J2 HEAD/PDB</b>，线的另一端插躯干里的 PDB J5。照片用于找接口，插头规格和线序按配套版本核对。</figcaption></figure>
 
 | 编号 | 位置 / 丝印 | 接什么 |
 |---|---|---|
@@ -59,7 +66,7 @@ HAT 叠在 Orange Pi Zero 3W 上，两块板一起装在脸部（face_part）里
 | <span class="num">3</span> | 下排左边，J7 MIC | 左麦克风 |
 | <span class="num">4</span> | 下排中间，J8 MIC P/N | 右麦克风 |
 | <span class="num">5</span> | 下排右边，J6 SPK P/N | 喇叭 |
-| <span class="num">6</span> | 右边白色 3P，J2 HEAD/PDB（1 G · 2 V · 3 D） | 接 PDB 的那根 PH2.0 3P 同向线：GND、电池、总线数据。**GND 和 DATA 别接反**，接反了每只舵机都会回 `ff ff 00` |
+| <span class="num">6</span> | 右边白色 3P，J2 HEAD/PDB | 接 PDB 的 J5，传电池电压和舵机总线数据。按[配套版本选线](#pdb-hat-wiring) |
 | — | 5V PWR（J6 右边） | 指示灯：HAT 的 5 V 有电时亮 |
 
 <figure class="photo"><img src="img/assembly/hat-stack.jpg" alt="HAT 叠在 Orange Pi Zero 3W 上，麦克风、喇叭和 ToF 线都已插好" loading="lazy"><figcaption>HAT 叠在 Orange Pi 上，麦克风、喇叭和 ToF 的线都插好了。麦克风线用双绞线，能少一点干扰。</figcaption></figure>
@@ -78,8 +85,42 @@ HAT 叠在 Orange Pi Zero 3W 上，两块板一起装在脸部（face_part）里
 <figure class="photo"><img src="img/assembly/head-standoffs.jpg" alt="白色 3D 打印垫柱撑住 Orange Pi 和 HAT 的特写" loading="lazy"><figcaption>白色的 3D 打印垫柱特写。mini HDMI 口留在侧面，调试时还能插线。</figcaption></figure>
 </div>
 
+## PDB 和 HAT 怎么连 {#pdb-hat-wiring}
+
+**躯干 PDB 的 J5（HAT）接头部 HAT 的 J2（HEAD/PDB）。** PDB 上另一个叫 J2 的接口用于给 IMU 烧录。在有 J7 HEAD 的 PDB 上，J7 接头部舵机。
+
+| 手上的板子 | 要买的线 | 两个插头同向摆放时的线位 |
+|---|---|---|
+| **新款 HAT 的 XH 配套**，HAT J2 和 PDB J5 都是 XH 三针座 | **反向 XH2.54 3P 双头线** | **① ↔ ③、② ↔ ②、③ ↔ ①**，中间线位置相同，两侧交叉 |
+| 此前教程里的 PH2.0 配套，HAT J2 和 PDB J5 都是 PH 三针座 | **同向 PH2.0 3P 双头线** | ① ↔ ①、② ↔ ②、③ ↔ ③ |
+
+淘宝可搜 **「XH2.54 3P 双头 反向线」**。JST 官方把 XH 的针距标为 **2.50 mm**，PH 为 **2.00 mm**。如果两块板的座子规格不同，先看各自的实物接口，再选两端插头匹配、三根线功能一一对应的线。 [JST XH 规格](https://www.jst.com/products/crimp-style-connectors-wire-to-board-type/xh-connector/) · [JST PH 规格](https://www.jst.com/products/crimp-style-connectors-wire-to-board-type/ph-connector/)
+
+早期的 XH 套件也有用同向线的版本。手里是老板或混搭时，按该批板子的接口说明和通断结果选线。 [早期 R3E / R2f 接口说明](https://github.com/Animan-AI/DuckBuddy/blob/main/docs/hardware/INTERFACE-CN.md)
+
+<figure class="photo wiring-figure">
+  <div class="wiring-map" role="img" aria-label="新款 XH 反向线示意。PDB J5 的线位一 GND 连到 HAT J2 的线位三 GND。线位二电池正极连到线位二。线位三 DATA 连到线位一 DATA。">
+    <strong class="wiring-title">PDB J5</strong>
+    <strong class="wiring-title">HAT J2</strong>
+    <div class="wiring-pins" aria-hidden="true">
+      <span class="wire-ground">① GND</span>
+      <span class="wire-power">② VBAT</span>
+      <span class="wire-data">③ DATA</span>
+    </div>
+    <div class="wiring-cross" aria-hidden="true"></div>
+    <div class="wiring-pins" aria-hidden="true">
+      <span class="wire-data">① DATA</span>
+      <span class="wire-power">② VBAT</span>
+      <span class="wire-ground">③ GND</span>
+    </div>
+  </div>
+  <figcaption><b>新款 XH 反向线。</b> 左右两列是两个插头以同一朝向观察时的线位示意。圈号用来核对线束位置，板上的实际接点以 G/V/D 丝印和通断测量为准。VBAT 是电池正极，DATA 是舵机信号。</figcaption>
+</figure>
+
+**插电前，用万用表核对这三根线。** 拔掉电池，两头拔下来单独量线束。把两个插头的卡扣朝同一方向，观察同一面，按表用蜂鸣档逐根确认。再核对插到板上后的功能配对：**GND 到 GND、VBAT 到 VBAT、DATA 到 DATA**。购买页写的「反向」和线颜色只能用于初选，最终按通断结果接线。
+
 ## 装完之后
 
-1. 通电前再看一遍：J2 那根线的 GND / DATA 没接反，电池节数和舵机型号对得上（HL-2915 用 3S，HD-1910 用 2S）。
+1. 通电前再看一遍：[PDB J5 ↔ HAT J2 的三根线](#pdb-hat-wiring)已逐根核对，电池节数和舵机型号对得上（HL-2915 用 3S，HD-1910 用 2S）。
 2. 接上电池，HAT 上的 **5V PWR** 灯应该亮，Orange Pi 开始启动。
 3. 接着照[新手教程](tutorial.html)烧卡、开机，用工作台的「整机测试」把舵机总线、IMU、麦克风、喇叭、ToF、摄像头都测一遍。
