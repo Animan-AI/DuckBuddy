@@ -20,10 +20,8 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 OUT = HERE / "_site"
 MEDIA = ["demo.gif", "wechat-group.png", "arch-software-zh.png", "arch-hardware-zh.png"]
-# Where the system image can be downloaded (a Baidu Netdisk share, with its extraction code);
-# empty: the home page says to ask in the group.
-IMAGE_URL = "https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh"
-IMAGE_CODE = "njvh"
+IMAGE_URL = "https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8"
+LEGACY_IMAGE_URL = "https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh"
 NAV = [("index", "首页"), ("bom", "物料清单"), ("assembly", "组装说明"), ("tutorial", "新手教程")]
 
 
@@ -59,9 +57,8 @@ def main():
         shutil.rmtree(OUT)
     (OUT / "media").mkdir(parents=True)
     template = (HERE / "template.html").read_text(encoding="utf-8")
-    image_link = (f'<a class="btn primary" href="{IMAGE_URL}">百度网盘下载</a>'
-                  f'<span class="muted">　提取码 <code>{IMAGE_CODE}</code></span>' if IMAGE_URL
-                  else "下载链接整理中，暂时请到下面的交流群里获取。")
+    image_link = (f'<a class="btn primary" href="{IMAGE_URL}">GitHub 下载 r8</a> '
+                  f'<a href="{LEGACY_IMAGE_URL}">百度网盘 r4</a>（提取码 <code>njvh</code>）')
     for page in sorted((HERE / "content").glob("*.*")):
         meta, body, toc = render(page)
         name = page.stem

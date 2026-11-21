@@ -13,7 +13,7 @@
 <img src="https://img.shields.io/badge/servos-Feetech%20HL--2915-green" alt="Feetech HL-2915">
 </p>
 
-<p align="center">🌐 <a href="https://animan-ai.github.io/DuckBuddy/"><b>项目主页</b></a> · <a href="https://animan-ai.github.io/DuckBuddy/bom.html">物料清单</a> · <a href="https://animan-ai.github.io/DuckBuddy/assembly.html">组装说明</a> · <a href="https://animan-ai.github.io/DuckBuddy/tutorial.html">新手教程</a> · <a href="https://pan.baidu.com/s/1n_kGYn8liX8YniRDvvMkiA?pwd=nway">系统镜像</a>（提取码 nway）</p>
+<p align="center">🌐 <a href="https://animan-ai.github.io/DuckBuddy/"><b>项目主页</b></a> · <a href="https://animan-ai.github.io/DuckBuddy/bom.html">物料清单</a> · <a href="https://animan-ai.github.io/DuckBuddy/assembly.html">组装说明</a> · <a href="https://animan-ai.github.io/DuckBuddy/tutorial.html">新手教程</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8">r8 系统镜像</a></p>
 
 <p align="center">中文 | <a href="README-EN.md">English</a></p>
 

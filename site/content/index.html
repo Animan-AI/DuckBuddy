@@ -67,7 +67,7 @@ home: true
 
 <section class="steps" id="wifi-setup">
   <h2>首次开机语音联网</h2>
-  <p>使用 <code>-r4</code> 镜像，接好麦克风、扬声器和摄像头后开机。说「豆豆，扫码」，听到提示后，把手机上的 Wi‑Fi 分享二维码放到摄像头前约 20–30 厘米。连上后，鸭子会逐位播报 IP。配网时无需键盘、SSH 或已有网络，运动服务仍在标定后启用。</p>
+  <p>使用 r4 或更新版镜像，接好麦克风、扬声器和摄像头后开机。说「豆豆，扫码」，听到提示后，把手机上的 Wi‑Fi 分享二维码放到摄像头前约 20–30 厘米。连上后，鸭子会逐位播报 IP。配网时无需键盘、SSH 或已有网络，运动服务仍在标定后启用。</p>
   <p><a href="tutorial.html#step2">查看首次开机联网步骤</a> · 语音配网仍待实机验证。</p>
 </section>
 
@@ -92,7 +92,8 @@ home: true
   <div class="cards">
     <div class="card">
       <h3>系统镜像</h3>
-      <p>Orange Pi Zero 3W 用的 DuckBuddy 系统（Debian trixie，约 9.5 GB），附带 <code>.sha256</code> 校验文件。下载网盘分享 Opi_r4_image，选择文件名以 -r4.img 结尾的镜像。</p>
+      <p>适用于 Orange Pi Zero 3W 的 r8 预览镜像（Debian trixie），支持 HL-2915（3S）和 HD-1910（2S）。下载全部 7-Zip 分卷，解压后用附带的 <code>.sha256</code> 核对镜像。</p>
+      <p>后台可切换模型供应商和 TTS，切回时会恢复该服务已保存的 Key。<a href="tutorial.html#online-model">查看模型与声音设置</a>。</p>
       <p>{{IMAGE_LINK}}</p>
     </div>
     <div class="card">
