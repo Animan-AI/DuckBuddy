@@ -6,13 +6,13 @@
 
 日常使用选 [r8 系统镜像](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8)。已经能正常使用的鸭子，可以按现有系统直接练习。
 
-[开机](#power-on) · [充电](#charge) · [日常使用](#daily-use) · [用 AI 做第一个小功能](#ai-development)
+[开机](#power-on) · [充电](#charge) · [日常使用](#daily-use) · [让 AI Agent 做第一个小功能](#ai-development)
 
 <a id="power-on"></a>
 
 ## 开机，打开豆豆的网页
 
-1. **先看机型和电池标签。** HL-2915 用普通 **3S LiPo**，HD-1910 用普通 **2S LiPo**。`2S`、`3S` 是串联的电芯节数，代表不同电压。请同时确认舵机、扩展板和电池是配套的。拿不准时，找卖家确认机型再接电池。
+1. **先看机型和电池标签。** HL-2915 用 **3S LiPo 或 3S LiHV**，HD-1910 用普通 **2S LiPo**。`2S`、`3S` 是串联的电芯节数，代表不同电压。请同时确认舵机、扩展板和电池是配套的。拿不准时，找卖家确认机型再接电池。
 2. **在平地上接电。** 扶住躯干或把鸭子放稳，再把电池插入机身的电池接口。插电后主控会开机。新刷的卡第一次启动要等几分钟。听到提示或看到主控启动后再继续。
 3. **让手机和鸭子连同一个 Wi‑Fi。** 如果鸭子已经连过这个网络，可以问「豆豆，你的 IP 是多少」。第一次连网或换了路由器，在手机的 Wi‑Fi 设置中点当前的 **2.4 GHz Wi‑Fi**，找「分享」或「二维码」。说「豆豆，扫码」，听到提示后把二维码举到摄像头前约 20–30 厘米。连上后记下它播报的 IP。配网失败时可用显示器和键盘，按[首次连网步骤](https://animan-ai.github.io/DuckBuddy/tutorial.html#step2)处理。
 4. **在手机浏览器打开页面。** 地址栏输入 `http://鸭子的IP:8088/`，例如鸭子报 `192.168.1.50` 时，输入 `http://192.168.1.50:8088/`。IP 就是这只鸭子在当前网络里的地址，换网络后可能变。有时浏览器会自动改成 HTTPS，把开头改回 `http://` 再试。
@@ -33,14 +33,17 @@
 
 ### 用锂电平衡充电器充电
 
-| 鸭子版本 | 普通 LiPo 电池标签 | 满充总电压 |
-|---|---|---|
-| HD-1910 | 2S，标称 7.4 V | 8.4 V |
-| HL-2915 | 3S，标称 11.1 V | 12.6 V |
+| 鸭子版本 | 电池标签 | 充电器模式 | 单节充满 | 整包充满 |
+|---|---|---|---|---|
+| HD-1910 | 普通 2S LiPo | LiPo Balance / 2S | 4.20 V | 8.40 V |
+| HL-2915 | 普通 3S LiPo | LiPo Balance / 3S | 4.20 V | 12.60 V |
+| HL-2915 | **3S LiHV，标有 4.35 V/节** | **LiHV Balance / 3S** | **4.35 V** | **13.05 V** |
+
+充电前先看电池标签上的类型和节数，再按表选模式。普通 3S LiPo 的满充电压是 12.60 V，**13.05 V 只适用于明确额定 4.35 V/节的 3S LiHV**。HD-1910 按 2S LiPo 的 8.40 V 上限使用。 [充电器手册及电池电压表](https://www.skyrc.com/download/100189_T400Q_Manual.pdf)
 
 1. **取下电池，等它冷却。** 鼓包、破损或异常发热的电池先停用。充电用与电池规格匹配的平衡充电器。香橙派上的 USB 接口不负责给电池充电。
-2. **按充电器说明接线。** 电池粗线的插头是主电源，细线的小插头用于逐节测量和均衡。设置为 **LiPo Balance（锂聚合物平衡充电）**，让充电器显示的 `2S` 或 `3S` 与电池标签一致。充电电流按电池厂家的说明设置，标签写着 LiHV 或其他类型时，先确认能否用于你的鸭子。
-3. **放在耐热、不燃的平面上充电，人留在旁边。** 充电器提示完成后，按说明拆下电池。充电器报节数不符或电池异常时先停止，核对标签和接线。 [平衡充电器说明及电池电压表](https://www.skyrc.com/download/100189_T400Q_Manual.pdf)
+2. **按充电器说明接线。** 粗线插头是主电源，细线的小插头是平衡头，用来逐节测量和均衡。根据上表核对充电器显示的模式和节数。充电电流按电池厂家的说明设置。
+3. **放在耐热、不燃的平面上充电，人留在旁边。** 充电器提示完成后，按说明拆下电池。充电器报节数不符或电池异常时先停止，核对标签和接线。 [平衡充电器说明](https://www.skyrc.com/download/100189_T400Q_Manual.pdf)
 
 <a id="daily-use"></a>
 
@@ -63,41 +66,31 @@
 
 <a id="ai-development"></a>
 
-## 用 AI 做第一个小功能
+## 让 AI Agent 做第一个小功能
 
-试着让电脑显示鸭子的电量，再请 AI 给数字加一条进度条。练习在你的电脑上运行，使用鸭子网页已经提供的电量读数。
+**AI Agent 是能在你的电脑上读代码、改文件、运行命令的助手。** 任选一个能打开本地项目的工具，比如 Codex、Claude Code 或腾讯 WorkBuddy。这次让它给 DuckBuddy 的电量读数加一条进度条，先在电脑上用演示数据验证。 [Claude Code 入门](https://code.claude.com/docs/en/quickstart) · [WorkBuddy](https://cloud.tencent.com/product/workbuddy)
 
-### 第一步：在电脑上跑通样例
+### 第一步：让 Agent 打开 DuckBuddy 项目
 
 1. 打开 DuckBuddy 仓库，点绿色 **Code → Download ZIP**，下载后解压。打开里面能看到 `README.md` 和 `tools` 的那一层文件夹。 [DuckBuddy 仓库](https://github.com/Animan-AI/DuckBuddy)
-2. 装好 Python 3。在 Windows 的文件资源管理器地址栏输入 `powershell` 并回车，会打开一个在当前文件夹里的命令窗口。输入下列命令，看到 Python 版本号后再继续。 [Python 安装说明](https://docs.python.org/3/using/windows.html)
+2. 在 Agent 里新建一个本地任务，把刚解压的项目文件夹选为**工作目录**。工作目录就是这次交给它处理的文件夹。让它先找到下面这个样例文件，确认打开的是 DuckBuddy 项目。 [电量样例源码](https://github.com/Animan-AI/DuckBuddy/blob/main/tools/duckweb/examples/battery_check.py)
+3. 在电脑上装好 Python 3。在这个任务里请 Agent 运行一次 `python --version`。看到 Python 3 的版本号，就能跑下面的样例。 [Python 安装说明](https://docs.python.org/3/using/windows.html)
 
-    ```powershell
-    python --version
-    ```
+### 第二步：交给 Agent 修改并运行
 
-3. 复制下面这一行，回车。演示会显示 **电量 78%（演示数据）**，鸭子关着机也能做这一步。
+把下面这段话发给 Agent。它会在项目文件夹里完成任务，你可以等它跑完再看结果。
 
-    ```powershell
-    python tools/duckweb/examples/battery_check.py --demo
-    ```
+> 我第一次改 DuckBuddy。请先读 `tools/duckweb/examples/battery_check.py`，运行 `python tools/duckweb/examples/battery_check.py --demo`，记下原来的输出。然后直接修改这个文件，在电量百分比旁边加一条 10 格的文字进度条。保留 `--demo`、`--url` 和收不到电量时的提示。改完再运行一次 `--demo`，给我看修改前后的实际输出和修改了哪个文件。这次只在我的电脑上改这个样例。
 
-4. 想读实物时，先用电脑浏览器确认能打开鸭子的网页。把下面的示例 IP 换成鸭子播报的地址再运行，比较脚本和网页上的电量。 [电量样例源码](https://github.com/Animan-AI/DuckBuddy/blob/main/tools/duckweb/examples/battery_check.py)
+### 第三步：看结果，再读实物电量
+
+1. **看 Agent 的运行结果。** 改之前会显示「电量 78%（演示数据）」，改之后应保留 **78%**，旁边多一条进度条。Agent 应只列出这一个文件的改动。鸭子关着也能做完这一步。
+2. **有实物再读一次。** 电脑能打开鸭子的网页后，把鸭子的 IP 告诉 Agent，请它运行下面的命令。让它把示例里的 `192.168.1.50` 换成你的地址，再把结果和网页上的电量对一下。
 
     ```powershell
     python tools/duckweb/examples/battery_check.py --url http://192.168.1.50:8088
     ```
 
-    如果脚本提示「网页还没收到电量」，刷新鸭子网页，等顶部出现电量再重新运行。新装的鸭子要先完成标定并启用整机服务。
+3. **有问题就把现象告诉 Agent。** 比如「演示有进度条，网页明明有电量，脚本却提示没收到」。请它读实际报错，复现后再改。想重来，可以请它把这一个文件恢复成仓库里的原版。分享日志前先遮掉 Wi‑Fi 密码和 API Key。
 
-### 第二步：请 AI 改一小处
-
-如果你的 AI 工具能打开代码文件夹，就选刚解压的文件夹。用普通聊天窗口也可以，先把上面链接里的样例代码发给它，再复制这段话。发送日志时，去掉 Wi‑Fi 密码和 API Key。
-
-> 我第一次改 DuckBuddy 的代码。先用两句话解释 `battery_check.py` 怎样取得电量。只改这个文件，在已有的百分比后面加一条 10 格的文字进度条。保留 `--demo` 和 `--url` 两种用法，收不到电量时仍要提示。程序只读取网页状态。请先运行演示命令，把实际输出给我看。如果你不能运行，请把改好的完整代码和我该运行的命令给我。
-
-如果 AI 返回的是代码文本，用记事本打开 `tools/duckweb/examples/battery_check.py`，备份一份，再用返回的完整代码替换原文并保存。
-
-改完再运行一次 `--demo`，看 **78%** 是否还在、进度条是否出现。再用真实 IP 和网页对比。这两个结果都对上，就完成了一次小改动。出错时，把**你运行的命令、完整报错、原本期待看到什么**一起交给 AI，每次先改一处。
-
-想继续动手，可以给脚本加低电量提示，或到鸭子的[名字与性格设置](https://animan-ai.github.io/DuckBuddy/tutorial.html#step9)试着换一个名字。涉及舵机动作时，先用样例或仿真验证，再在有人扶护的实机上试，并保留原机配置方便恢复。
+下一个练习可以让 Agent 加上低电量提示，或者按[名字与性格设置](https://animan-ai.github.io/DuckBuddy/tutorial.html#step9)换一个名字。涉及舵机动作时，先在仿真中验证，再在有人扶护的实机上试，保留原机配置方便恢复。

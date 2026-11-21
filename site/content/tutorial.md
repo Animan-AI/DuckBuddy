@@ -1,6 +1,6 @@
 ---
 title: 新手教程
-lead: 从开机、充电、聊天和手柄行走开始，用 AI 做一个小功能。附首次烧卡、配网和标定步骤。
+lead: 从开机、充电、聊天和手柄行走开始，用 AI Agent 做一个小功能。附首次烧卡、配网和标定步骤。
 ---
 
 {{GETTING_STARTED_GUIDE}}
@@ -14,7 +14,7 @@ lead: 从开机、充电、聊天和手柄行走开始，用 AI 做一个小功�
 | 类别 | 东西 | 说明 |
 |---|---|---|
 | 机器人 | 组装好的机器鸭 | Orange Pi Zero 3W + HAT + PDB，15 只 HL-2915 或 HD-1910 舵机，舵机 ID 已设好（1–15）。零件见 [物料清单](bom.html) |
-| 机器人 | 锂电池 | HL-2915 用普通 3S LiPo，满充 12.6 V。HD-1910 用普通 2S LiPo，满充 8.4 V。详见[充电](#charge) |
+| 机器人 | 锂电池 | HL-2915 用 3S LiPo（满充 12.60 V）或 3S LiHV（满充 13.05 V）。HD-1910 用普通 2S LiPo（满充 8.40 V）。详见[充电](#charge) |
 | 存储 | TF 卡 16 GB 以上 + 读卡器 | 镜像约 9.5 GB |
 | 电脑 | Windows 10/11 | 和机器鸭连在同一个 WiFi 里 |
 | 电脑 | 系统镜像 | 从 [GitHub Releases](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8) 下载 r8 的 `.7z` 和 `.img.sha256`。旧版 r4 仍可在[百度网盘](https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh)下载（提取码 `njvh`） |
