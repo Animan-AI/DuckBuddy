@@ -11,8 +11,8 @@
 
 ## 下载与烧录
 
-1. 在 [GitHub Releases](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8) 下载全部 `.7z.001`、`.7z.002` 等分卷及 `.img.sha256`，放进同一个文件夹。
-2. 用 7-Zip 解压 `.7z.001`，得到 `DuckBuddy-opizero3w-trixie-20261120-r8.img`。打开 PowerShell 校验 SHA-256，结果应和 `.img.sha256` 的首列一致。
+1. 在 [GitHub Releases](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8) 下载 `.7z` 压缩包和 `.img.sha256`，放进同一个文件夹。
+2. 用 7-Zip 解压 `.7z`，得到 `DuckBuddy-opizero3w-trixie-20261120-r8.img`。打开 PowerShell 校验 SHA-256，结果应和 `.img.sha256` 的首列一致。
 
    ```powershell
    Get-FileHash .\DuckBuddy-opizero3w-trixie-20261120-r8.img -Algorithm SHA256
