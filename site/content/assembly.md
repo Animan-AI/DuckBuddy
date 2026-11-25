@@ -53,7 +53,7 @@ PDB 上还有 IMU，它的朝向决定姿态解算对不对：板子按照片的
 
 ## HAT + Orange Pi：装在头里 {#hat}
 
-HAT 叠在 Orange Pi Zero 3W 上，两块板一起装在脸部（face_part）里面，摄像头和 ToF 也装在脸上。
+HAT 叠在 Orange Pi Zero 3W 上，两块板一起装在脸部（face_part）里面。合上头壳之前，按[头部传感器接线](#camera-tof)接好摄像头和 ToF。
 
 **先认 HAT 上的插座**（编号对应下面照片里的标记，丝印都印在板子上）：
 
@@ -84,6 +84,42 @@ HAT 叠在 Orange Pi Zero 3W 上，两块板一起装在脸部（face_part）里
 <figure class="photo"><img src="img/assembly/head-inside.jpg" alt="头里：Orange Pi 和 HAT 用白色垫柱固定在脸部，下面是喇叭和摄像头排线" loading="lazy"><figcaption>装进头里：上面是两块板，中间是喇叭，橙色的是摄像头排线，左边红黄黑三根是去 PDB 的线。</figcaption></figure>
 <figure class="photo"><img src="img/assembly/head-standoffs.jpg" alt="白色 3D 打印垫柱撑住 Orange Pi 和 HAT 的特写" loading="lazy"><figcaption>白色的 3D 打印垫柱特写。mini HDMI 口留在侧面，调试时还能插线。</figcaption></figure>
 </div>
+
+## 摄像头排线与 ToF 接线 {#camera-tof}
+
+<figure class="photo annot">
+  <div class="annot-img">
+    <a href="img/assembly/camera-tof-wiring.jpg"><img src="img/assembly/camera-tof-wiring.jpg" alt="头部传感器接线实拍。左侧香橙派 CAM2 用橙色排线连中央的 IMX219；摄像头下方的蓝色 ToF 模块焊接四芯线，另一端插右侧 HAT 的 J5 TOF。" width="1200" height="674" loading="lazy"></a>
+    <span class="mark" style="left:33%;top:34%" aria-hidden="true">1</span>
+    <span class="mark" style="left:64%;top:38%" aria-hidden="true">2</span>
+    <span class="mark" style="left:54%;top:72%" aria-hidden="true">3</span>
+    <span class="mark" style="left:81.5%;top:55%" aria-hidden="true">4</span>
+  </div>
+  <figcaption>① 香橙派 CAM2 排线座 · ② IMX219 摄像头 · ③ ToF 模块焊点 · ④ HAT J5 TOF 插座。点击照片可放大。</figcaption>
+</figure>
+
+### 接摄像头排线
+
+1. 拔掉电池和其他供电。用配套的 **22 针转 15 针 MIPI 摄像头排线**，22 针端插香橙派的 **CAM2**（①），15 针端插 **IMX219** 摄像头（②）。
+2. 两端分别打开卡扣，让排线的金属触点朝向座内触点。把排线插平、插到底，再扣回卡扣。两侧插入深度要一致，走线时留弯，避免锐折或夹在头壳边缘。
+
+**照片中的短排线是单独购买的。** 摄像头随附的长排线也可以直接使用，接法和功能相同，把多出的长度在头壳内留成宽弯即可。
+
+### 焊接 ToF 的四根线
+
+1. 按图准备一端有 **SH1.0 4P** 插头、另一端是散线的线束。插头端接 **HAT J5 TOF**（④），散线端逐根焊到 ToF 模块背面的对应焊盘（③）。
+2. 按下表把同名信号接在一起。剥线只留够焊接的裸芯，给线头和焊盘预上锡，再逐根焊接。线色可辅助辨认线束，接线以丝印和万用表实测为准。
+
+| HAT J5 TOF | ToF 模块焊盘 | 用途 |
+|---|---|---|
+| 1 · 3V3 | 3.3 V 供电脚 | 模块供电 |
+| 2 · G / GND | GND | 地 |
+| 3 · SCL | SCL | I²C 时钟 |
+| 4 · SDA | SDA | I²C 数据 |
+
+3. 通电前检查四根线逐根导通、相邻焊点没有连锡，并确认 3V3 和 GND 之间没有短路。焊点确认后固定线束，让拉力落在固定处，避开 ToF 传感器窗口。
+
+**合壳前测试。** 接上电源后在工作台「整机测试」分别运行「摄像头」和「ToF」。摄像头应能看到正常缩略图，白纸在 ToF 前来回移动时，距离读数应随之变化。
 
 ## PDB 和 HAT 怎么连 {#pdb-hat-wiring}
 

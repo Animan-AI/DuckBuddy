@@ -36,8 +36,8 @@ DuckBuddy 有两个版本，除舵机、电池和两处焊接外，其余零件�
 
 | 零件 | 规格 | 数量 | 说明 |
 |---|---|---|---|
-| 摄像头 | **IMX219** 模组，配 Orange Pi Zero 3W 的 MIPI 排线 | 1 | 装在脸上（face_part），看人脸、扫码连网 |
-| ToF 测距 | **VL53L5CX** 8 × 8 模块，SH1.0 4P 接口 | 1 | 插 HAT 的 J5；原版用的 VL53L8CX 也行 |
+| 摄像头 | **IMX219** 模组，配 Orange Pi Zero 3W 的 22 针转 15 针 MIPI 排线 | 1 | 装在脸上，摄像头自带的长排线可用。见[接线实拍](assembly.html#camera-tof) |
+| ToF 测距 | **VL53L5CX** 8 × 8 模块，HAT 端用 SH1.0 4P | 1 | 接 HAT 的 J5；原版用的 VL53L8CX 也行。见[四线焊接与线序](assembly.html#camera-tof) |
 | 麦克风 | 驻极体咪头 | 2 | 头壳左右各一，焊到 HAT 的 J7（左）/ J8（右），用来听声辨向 |
 | 喇叭 | 小喇叭，约 8 g，能放进头里约 35 × 25 × 7 mm 的位置 | 1 | 焊到 HAT 的 J6，单声道 |
 
