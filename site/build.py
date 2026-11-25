@@ -19,7 +19,7 @@ import markdown
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 OUT = HERE / "_site"
-MEDIA = ["demo.gif", "wechat-group.png", "arch-software-zh.png", "arch-hardware-zh.png"]
+MEDIA = ["demo.gif", "wechat-group.png", "wechat-group-2.png", "arch-software-zh.png", "arch-hardware-zh.png"]
 IMAGE_URL = "https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8"
 LEGACY_IMAGE_URL = "https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh"
 NAV = [("index", "首页"), ("bom", "物料清单"), ("assembly", "组装说明"), ("tutorial", "新手教程")]

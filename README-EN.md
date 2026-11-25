@@ -159,6 +159,8 @@ Our two boards, the HAT and the PDB/IMU:
 
 <p align="center"><img src="docs/media/boards-en.png" width="900" alt="What is new in the HAT and the PDB/IMU"></p>
 
+Connect PDB J5 to HAT J2 with a 300 mm reversed PH2.0 3-pin cable. Check all three wires against the [wiring diagram](https://animan-ai.github.io/DuckBuddy/assembly.html#pdb-hat-wiring) before powering on.
+
 ### Software stack
 
 | Service | Language | What it does |
@@ -271,11 +273,13 @@ Our two boards, the HAT and the PDB/IMU:
 
 </details>
 
-Come and chat — building, tuning, training, or just showing off your duck. The WeChat group:
+Join us on WeChat to talk about assembling, tuning, and training your duck. Group 1 is nearly full, so please join Group 2 first.
 
-<p align="center"><img src="docs/media/wechat-group.png" width="300" alt="DuckBuddy WeChat group QR code"></p>
+| DuckBuddy Group 1 | DuckBuddy Group 2 (recommended) |
+| :---: | :---: |
+| <img src="docs/media/wechat-group.png" width="240" alt="DuckBuddy WeChat Group 1 QR code"> | <img src="docs/media/wechat-group-2.png" width="240" alt="DuckBuddy WeChat Group 2 QR code"> |
 
-<p align="center"><sub>WeChat group codes expire after a week and are refreshed here; if this one has lapsed, open an issue.</sub></p>
+The expiration date is on each image. If a code has expired, please open a [GitHub issue](https://github.com/Animan-AI/DuckBuddy/issues).
 
 ---
 

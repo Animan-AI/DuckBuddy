@@ -143,8 +143,9 @@ main { max-width: var(--max); margin: 0 auto; padding: 24px 16px 56px; }
 
 .arch figure { margin: 16px 0 0; }
 .arch img { border-radius: var(--radius); border: 1px solid var(--border); background: #fff; display: block; }
-.community-body { display: flex; gap: 24px; align-items: center; }
-.community-body img { border-radius: 12px; border: 1px solid var(--border); flex: none; }
+.community-codes { max-width: 560px; }
+.community-codes img { height: auto; }
+.community-codes figcaption { text-align: center; }
 
 /* docs */
 .doc { display: block; }
@@ -251,7 +252,6 @@ td:first-child { white-space: nowrap; }
 @media (max-width: 560px) {
   body { font-size: 15.5px; }
   .features, .cards { grid-template-columns: 1fr; }
-  .community-body { flex-direction: column; align-items: flex-start; }
   .toc ol { columns: 1; }
   .brand { font-size: 16px; }
   .site-nav a { padding: 6px 7px; font-size: 14px; }

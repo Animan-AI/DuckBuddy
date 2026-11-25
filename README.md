@@ -152,6 +152,8 @@ flowchart LR
 
 <p align="center"><img src="docs/media/boards-zh.png" width="900" alt="HAT + PDB/IMU 的设计亮点"></p>
 
+**两块板的连接线**用 PH2.0 3P 双头反向线（300 mm），从 PDB J5 接到 HAT J2。插电前按[接线图](https://animan-ai.github.io/DuckBuddy/assembly.html#pdb-hat-wiring)核对三根线。
+
 ### 软件栈
 
 | 服务 | 语言 | 做什么 |
@@ -258,11 +260,13 @@ flowchart LR
 
 </details>
 
-玩法、组装、调试、训练，都欢迎进群聊。微信扫码加入：
+玩法、组装、调试、训练，都欢迎进群聊。1 群接近满员，新成员请优先加入 2 群。
 
-<p align="center"><img src="docs/media/wechat-group.png" width="300" alt="DuckBuddy 交流群微信二维码"></p>
+| DuckBuddy 交流群（1 群） | DuckBuddy 交流群 2（优先） |
+| :---: | :---: |
+| <img src="docs/media/wechat-group.png" width="240" alt="DuckBuddy 交流群 1 微信二维码"> | <img src="docs/media/wechat-group-2.png" width="240" alt="DuckBuddy 交流群 2 微信二维码"> |
 
-<p align="center"><sub>群二维码每周更新；过期了请提 Issue，我们会尽快换新的。</sub></p>
+二维码有效期见图片。过期后可在 [GitHub Issues](https://github.com/Animan-AI/DuckBuddy/issues) 留言提醒更新。
 
 ---
 
