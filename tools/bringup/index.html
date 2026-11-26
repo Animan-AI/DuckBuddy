@@ -157,6 +157,17 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
         <pre><code id="ov-ssh-check"></code></pre>
       </details>
       <table class="kv" id="ov-robot"></table>
+      <h2>整机机型</h2>
+      <div id="ov-model-current" class="muted" role="status"></div>
+      <div class="row">
+        <label>舵机型号 <select id="ov-model">
+          <option value="">选择机型</option>
+          <option value="hl2915">HL-2915（3S）</option>
+          <option value="hd1910">HD-1910（2S）</option>
+        </select></label>
+        <button id="ov-apply-model" class="primary" disabled>应用到机器人</button>
+      </div>
+      <p id="ov-model-help" class="muted"></p>
       <h2>robotd</h2>
       <div id="ov-robotd" class="muted">—</div>
       <div class="row">
@@ -252,16 +263,15 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
     <ul>
       <li><b>上了扭矩但纹丝不动、电流 0</b>：44（目标电流）或 46（速度）是 0。HD-1910 有时还会“零电流卡住”，重写 46 就能动。工具每次写目标都会把 42..47 一起写。</li>
       <li><b>跑着跑着没力、扭矩开关还是 1</b>：过流卸载，把 19 的 bit3 关掉（HD-1910 写 5）。</li>
-      <li><b>电流显示比实际大 10 倍或小 10 倍</b>：上面“电流单位”选错了。HD-1910 是 0.65 mA/格，HL-2915 是 6.5 mA/格。</li>
+      <li><b>电流显示差 10 倍</b>：到「总览 → 整机机型」核对舵机型号。HD-1910 是 0.65 mA/格，HL-2915 是 6.5 mA/格。</li>
       <li><b>改波特率后找不到舵机</b>：给舵机断电重上，再按新波特率扫描。</li>
     </ul>
   </details>
+  <div class="row"><span id="sv-model" class="muted"></span><button id="sv-model-link">去总览设置机型</button></div>
   <div class="card" style="margin-bottom:16px">
     <h2>新舵机批量配置向导（USB 调试板）</h2>
     <div class="muted">一只一只接上：改 ID、配 EEPROM、改成 500k，再转到 2048 装舵盘（舵机自己的“零位”）。装进机身后的关节零位在“零位标定”页做。</div>
     <div class="row">
-      <label>舵机 <select id="wz-model"><option value="hd1910">HD-1910（小黑，2S）</option>
-        <option value="hl2915">HL-2915（小白，3S）</option></select></label>
       <label>接法 <select id="wz-chain"><option value="chain">串成链（ID 倒着分）</option>
         <option value="isolated">每只单独接</option></select></label>
       <label>ID 顺序 <input id="wz-ids" value="15-1" style="width:110px" title="如 15-1、1-15、3,4,9"></label>
@@ -280,7 +290,6 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
     <div class="muted">一只一只摆，看哪个关节动了就点哪个关节。15 个都点完后，可以把舵机的 ID 改成想要的顺序，也可以直接把映射写进配置的 <code>joint_ids</code>。
       用的是下面“总线 / 波特率”选的那条总线；机器人总线要先停 robotd。左右指<b>机器人自己</b>的左右。</div>
     <div class="row">
-      <label>舵机 <select id="mp-mpc"><option value="0.65">HD-1910（0.65 mA/格）</option><option value="6.5">HL-2915（6.5 mA/格）</option></select></label>
       <label>摆幅 ± <input id="mp-amp" type="number" value="8" step="1"> °</label>
       <label>限流 <input id="mp-cur" type="number" value="400"> mA</label>
       <label><input type="checkbox" id="mp-auto" checked> 点完自动摆下一只</label>
@@ -301,9 +310,6 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
     <label>ID <input id="sv-lo" type="number" value="0" min="0" max="253"> –
       <input id="sv-hi" type="number" value="20" min="0" max="253"></label>
     <label><input id="sv-imu" type="checkbox" checked> 含 200（IMU）</label>
-    <label>电流单位 <select id="sv-mpc">
-      <option value="">按配置</option><option value="6.5">HL-2915 6.5 mA/格</option>
-      <option value="0.65">HD-1910 0.65 mA/格</option></select></label>
     <button id="sv-scan" class="primary">扫描</button>
   </div>
   <div class="scroll"><table id="sv-table"></table></div>
@@ -494,6 +500,11 @@ const BAUD_NAME = ["1M","500k","250k","128k","115200","76800","57600","38400"];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let INFO = {}, HELLO = null, SEL = null;
+const SERVO_MODELS = {
+  hd1910: {name: "HD-1910（2S）", mpc: 0.65, unload: 5},
+  hl2915: {name: "HL-2915（3S）", mpc: 6.5, unload: 13},
+};
+let MODEL_CHOICE = "";
 
 function toast(msg, err) {
   const d = document.createElement("div");
@@ -522,7 +533,13 @@ function jointOf(id) {
   if (id === 200) return "IMU 板";
   return i >= 0 ? JOINT_CN[i] : "";
 }
-function mpcArg() { const v = $("sv-mpc").value; return v ? {ma_per_count: +v} : {}; }
+function selectedModel() { return MODEL_CHOICE || HELLO?.duck_model || ""; }
+function mpcArg(target) {
+  const model = SERVO_MODELS[selectedModel()];
+  if (model) return {ma_per_count: model.mpc};
+  if (target === "usb") throw new Error("请先在「总览 → 整机机型」选择舵机型号");
+  return {};
+}
 
 // ---- 页签 ---------------------------------------------------------------------------------
 document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
@@ -532,6 +549,41 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
 });
 
 // ---- 总览 ---------------------------------------------------------------------------------
+function renderDuckModel() {
+  const configured = SERVO_MODELS[HELLO?.duck_model];
+  const selected = SERVO_MODELS[selectedModel()];
+  $("ov-model").value = selectedModel();
+  $("ov-model-current").textContent = HELLO
+    ? `机器人当前配置：${configured?.name || "自定义或未匹配"}` : "还未连接机器人";
+  $("ov-apply-model").disabled = !HELLO?.duck_model_available || !selected;
+  $("ov-model-help").textContent = HELLO?.duck_model_available
+    ? "这里的选择会同步到舵机页。应用到机器人会写入电池规格、电流单位和步态配置。"
+    : "USB 调试可直接使用这里的选择。写入整机机型需要连接使用镜像默认配置的机器人。";
+  $("sv-model").textContent = selected
+    ? `当前舵机型号：${selected.name} · ${selected.mpc} mA/格` : "请在总览设置舵机型号";
+}
+$("ov-model").onchange = e => {
+  MODEL_CHOICE = e.target.value;
+  try { localStorage.setItem(`duck-model:${INFO.host}`, MODEL_CHOICE); } catch (error) {}
+  clearServoScan();
+  renderDuckModel();
+};
+$("sv-model-link").onclick = () => {
+  document.querySelector('#tabs button[data-tab="ov"]').click();
+  $("ov-model").focus();
+};
+$("ov-apply-model").onclick = e => busy(e.target, async () => {
+  const model = selectedModel();
+  if (!SERVO_MODELS[model] || !HELLO?.duck_model_available) return;
+  if (!confirm(`确认实物舵机和电池是 ${SERVO_MODELS[model].name}？请托稳鸭子。正在运行的 robotd 会卸力并重新启动。`)) return;
+  try {
+    const result = await call("set_duck_model", {model}, "robot", 75);
+    toast(result.msg);
+  } finally {
+    await refresh();
+  }
+});
+
 function showSshHelp(error) {
   const host = String(INFO.host);
   const address = host.slice(host.lastIndexOf("@") + 1);
@@ -563,11 +615,14 @@ async function refresh() {
   try {
     HELLO = await call("hello");
   } catch (e) {
+    HELLO = null;
+    renderDuckModel();
     $("conn").innerHTML = `<span class="red">${esc(INFO.host)} 连不上</span>`;
     showSshHelp(e.message);
     toast(e.message, true); return;
   }
   showSshHelp();
+  renderDuckModel();
   const h = HELLO, b = h.bus || {};
   $("conn").textContent = `${h.hostname}（${INFO.host}）· robotd ${h.robotd_pids?.length ? "运行中" : "未运行"}`;
   const rows = [["主机名", h.hostname], ["Python", h.python], ["舵机串口", `${h.port} @ ${h.baud}` + (h.port_exists ? "" : "（不存在！）")],
@@ -631,7 +686,7 @@ $("usb-open").onclick = e => busy(e.target, async () => {
 
 // ---- 舵机 ---------------------------------------------------------------------------------
 function svBaud() { return $("sv-baud").value === "all" ? 500000 : +$("sv-baud").value; }
-function svArgs(extra) { return Object.assign({baud: SEL?.baud ?? svBaud()}, mpcArg(), extra || {}); }
+function svArgs(extra) { return Object.assign({baud: SEL?.baud ?? svBaud()}, mpcArg($("sv-target").value), extra || {}); }
 function svCall(op, args, timeout) { return call(op, svArgs(args), $("sv-target").value, timeout); }
 
 function clearServoScan() {
@@ -650,7 +705,7 @@ $("sv-scan").onclick = e => busy(e.target, async () => {
   const usb = target === "usb";
   const all = $("sv-baud").value === "all";
   if (all && !usb) return toast("机器人总线上只扫一个波特率（1M 在 OPi 上实际 750k）", true);
-  const args = Object.assign({lo: +$("sv-lo").value, hi: +$("sv-hi").value}, mpcArg(),
+  const args = Object.assign({lo: +$("sv-lo").value, hi: +$("sv-hi").value}, mpcArg(target),
     all ? {bauds: [1000000, 500000, 250000, 115200]} : {baud: svBaud()});
   const r = await call("scan", args, target, 180);
   let found = r.found;
@@ -764,8 +819,8 @@ function mpNext(after) {
   return free.find(id => MP.ids.indexOf(id) > k) ?? free[0];
 }
 function mpArgs(extra) {
-  return Object.assign({baud: MP.baud, ma_per_count: +$("mp-mpc").value, amp_deg: +$("mp-amp").value,
-    current_ma: +$("mp-cur").value}, extra || {});
+  return Object.assign({baud: MP.baud, amp_deg: +$("mp-amp").value,
+    current_ma: +$("mp-cur").value}, mpcArg(MP.target), extra || {});
 }
 function mpNow(html, warn) { $("mp-now").innerHTML = html ? `<div class="note ${warn ? "warn" : ""}">${html}</div>` : ""; }
 function mpRender(msg, warn) {
@@ -905,7 +960,7 @@ $("mp-start").onclick = e => busy(e.target, async () => {
   const target = $("sv-target").value;
   if ($("sv-baud").value === "all") return toast("映射要选一个具体的波特率（装好的舵机一般是 500k）", true);
   const baud = svBaud();
-  const r = await call("scan", {lo: 0, hi: 39, baud, ma_per_count: +$("mp-mpc").value}, target, 60);
+  const r = await call("scan", {lo: 0, hi: 39, baud, ...mpcArg(target)}, target, 60);
   const servos = r.found.filter(s => !s.imu);
   if (!servos.length) return toast(`${baud} 下 ID 0–39 没扫到舵机`, true);
   const ids = servos.map(s => s.id);
@@ -921,7 +976,6 @@ $("mp-clear").onclick = () => { if (confirm("清空映射？")) { MP.map = Array
 mpRender();
 
 // ---- 新舵机批量配置向导 ---------------------------------------------------------------------
-const WZ_MODEL = {hd1910: {unload: 5, mpc: 0.65, name: "HD-1910"}, hl2915: {unload: 13, mpc: 6.5, name: "HL-2915"}};
 let WZ = null;
 function parseIds(s) {
   const out = [];
@@ -933,8 +987,12 @@ function parseIds(s) {
   return out;
 }
 function wzArgs(extra) {
-  const m = WZ_MODEL[WZ.model];
+  const m = wizardModel();
   return Object.assign({final_baud: WZ.baud, unload: m.unload, ma_per_count: m.mpc}, extra || {});
+}
+function wizardModel() {
+  if (WZ.model !== selectedModel()) throw new Error("机型已切换，请重新开始配置向导");
+  return SERVO_MODELS[WZ.model];
 }
 function wzList() {
   $("wz-list").innerHTML = WZ.ids.map((id, k) => {
@@ -965,7 +1023,7 @@ async function wzProbe() {
     factory_bauds: [1000000, WZ.baud]}), "usb", 60);
   if (r.state === "target") return wzConfigure(target, r.baud, r.msg);
   if (r.state === "fresh") {
-    const want = WZ.model === "hd1910" ? "HD-1910" : "HL-2915";
+    const want = SERVO_MODELS[WZ.model].name;
     return wzConfigure(1, r.baud, r.msg + `；按 ${want} 配置`);
   }
   wzConnect(r.msg, true);
@@ -1006,7 +1064,7 @@ function wzCenterStep(info) {
   wzStep(`${info}<br><b>回中装舵盘</b>：舵机会转到同圈最近的 2048 并保持扭矩（限流 ${WZ.cur} mA）。舵机还没装舵盘、手离开输出轴。
     <div class="row">${wzBtn("wz-c", "回中并保持", async () => {
       if (!motionOK(`ID ${target} 转到中位 2048 并保持扭矩`)) return;
-      const r = await call("center", {id: target, baud: WZ.baud, current_ma: WZ.cur, ma_per_count: WZ_MODEL[WZ.model].mpc}, "usb", 30);
+      const r = await call("center", {id: target, baud: WZ.baud, current_ma: WZ.cur, ma_per_count: wizardModel().mpc}, "usb", 30);
       if (!r.ok) return wzStep(`<div class="note warn">${esc(r.msg)}</div><div class="row">${wzBtn("wz-c2", "再试一次", async () => wzCenterStep(info), true)}${wzBtn("wz-cs", "跳过回中", async () => wzDone(info))}</div>`);
       wzStep(`${esc(r.msg)}<br><b>把舵盘按中立位（输出轴的定位标记对齐）装上</b>，拧好螺丝后点下面按钮松扭矩。
         <div class="row">${wzBtn("wz-off", "舵盘装好了，松扭矩", async () => {
@@ -1029,14 +1087,16 @@ $("wz-start").onclick = () => {
   if (!ids.length || ids.some(i => !(i >= 0 && i <= 252) || i === 200)) return toast("ID 顺序不对（0–252，不能用 200）", true);
   if (new Set(ids).size !== ids.length) return toast("ID 有重复", true);
   if (!INFO.com) return toast("先在总览页选 USB 调试板的串口", true);
-  WZ = {ids, i: 0, status: {}, assigned: [], verified: false, newly: 0, model: $("wz-model").value, chain: $("wz-chain").value,
+  const model = selectedModel();
+  if (!SERVO_MODELS[model]) return toast("先在「总览 → 整机机型」选择舵机型号", true);
+  WZ = {ids, i: 0, status: {}, assigned: [], verified: false, newly: 0, model, chain: $("wz-chain").value,
     baud: +$("wz-baud").value, center: $("wz-center").checked, verify: $("wz-verify").checked, cur: +$("wz-cur").value};
   if (WZ.chain === "chain" && ids[ids.length - 1] !== 1)
     toast("串成链时最后一只应该是 ID 1（新舵机都是 ID 1，倒着分才不会撞号）", true);
-  $("sv-mpc").value = String(WZ_MODEL[WZ.model].mpc);
   wzConnect();
 };
 $("wz-check").onclick = e => busy(e.target, async () => {
+  wizardModel();
   $("sv-target").value = "usb"; $("sv-baud").value = String(WZ.baud);
   $("sv-lo").value = 0; $("sv-hi").value = Math.max(...WZ.ids) + 2;
   $("sv-scan").click();
@@ -1181,6 +1241,11 @@ $("t-export").onclick = () => {
 // ---- 启动 ---------------------------------------------------------------------------------
 (async () => {
   INFO = await (await fetch("/api/info")).json();
+  try {
+    const saved = localStorage.getItem(`duck-model:${INFO.host}`);
+    if (SERVO_MODELS[saved]) MODEL_CHOICE = saved;
+  } catch (error) {}
+  renderDuckModel();
   $("zr-config").textContent = INFO.config;
   document.querySelectorAll(".zr-config-name").forEach(e => e.textContent = INFO.config);
   // 教程第一次默认展开，之后记住用户收起/展开

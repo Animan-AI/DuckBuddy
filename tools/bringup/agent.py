@@ -39,6 +39,7 @@ HL2915_MODEL = 6922
 HD1910_MODEL = 7946
 IMU_MODEL = 0x16D6
 DEG_PER_COUNT = 360.0 / 4096
+DUCK_MODELS = {"hl2915": (3, 14.0, 6.5), "hd1910": (2, 8.4, 0.65)}
 
 # (地址, 字节数, 名称, 类别, 有符号) 类别：ro 只读 / ee EEPROM（写时自动解锁再上锁）/ ram
 REGS = [
@@ -324,7 +325,9 @@ def op_hello(args):
         r = subprocess.run(["systemctl", "--user", "is-active", unit], capture_output=True, text=True)
         info["robotd_unit_state"] = r.stdout.strip()
         info["robotd_socket"] = os.path.exists("/tmp/robotd.sock")
-        info["duck_services_available"] = duck_services_command() is not None
+        info["duck_services_available"] = image_config_command("duck-services") is not None
+        info["duck_model_available"] = image_config_command("duck-model") is not None
+        info["duck_model"] = configured_duck_model(Ctx.config)
         info["walk_policy"] = (Ctx.config or {}).get("policy", {}).get("walk")
         busy = {"visiond": "visiond", "tofd": "tofd", "voiced": "voiced", "lifed": "lifed", "duckcam": "duckcam",
                 "padd": "padd"}
@@ -333,14 +336,76 @@ def op_hello(args):
     return info
 
 
-def duck_services_command():
+def image_config_command(name):
     if Ctx.usb or Ctx.cfg_path != os.path.realpath(os.path.expanduser("~/robot/duck.toml")):
         return None
-    return shutil.which("duck-services")
+    return shutil.which(name)
+
+
+def configured_duck_model(config):
+    config = config or {}
+    battery = config.get("battery", {})
+    bus = config.get("bus", {})
+    for model, (cells, volts, current) in DUCK_MODELS.items():
+        if (battery.get("cells"), battery.get("max_volts"), bus.get("current_ma_per_count")) == (
+            [cells], volts, current
+        ):
+            return model
+    return None
+
+
+def robotd_params_path(pid):
+    with open(f"/proc/{pid}/cmdline", "rb") as f:
+        argv = f.read().decode(errors="replace").rstrip("\0").split("\0")
+    for i, arg in enumerate(argv):
+        if arg == "--params" and i + 1 < len(argv):
+            path = argv[i + 1]
+        elif arg.startswith("--params="):
+            path = arg.split("=", 1)[1]
+        else:
+            continue
+        return os.path.realpath(os.path.join(os.readlink(f"/proc/{pid}/cwd"), path))
+    return None
+
+
+def op_set_duck_model(args):
+    """Use the image's installed tool, keeping the selected config and control service aligned."""
+    model = args.get("model")
+    if model not in DUCK_MODELS:
+        raise RuntimeError("请选择 HD-1910（2S）或 HL-2915（3S）")
+    command = image_config_command("duck-model")
+    if not command:
+        raise RuntimeError("机型切换适用于装有 duck-model 的镜像默认配置")
+    unit = args.get("unit", "robotd-dev")
+    result = subprocess.run(["systemctl", "--user", "show", unit, "--property=MainPID", "--value"],
+                            capture_output=True, text=True, timeout=5)
+    if result.returncode or not result.stdout.strip().isdigit():
+        raise RuntimeError(f"读不到 {unit} 的状态")
+    running_pid = int(result.stdout)
+    if any(pid != running_pid for pid in robotd_pids()):
+        raise RuntimeError("存在由其他方式启动的 robotd，请先在总览停掉它")
+    if running_pid:
+        if robotd_params_path(running_pid) != Ctx.cfg_path:
+            raise RuntimeError("正在运行的 robotd 使用另一份配置，请核对它的 --params 路径")
+        stopped = op_robotd_stop({"unit": unit, "pid": running_pid})
+        if stopped["robotd_pids"]:
+            raise RuntimeError("robotd 仍在运行，未写入机型")
+        op_relax_all({})
+    result = subprocess.run([command, model], capture_output=True, text=True, timeout=30)
+    if result.returncode:
+        raise RuntimeError((result.stdout + "\n" + result.stderr).strip() or "写入机型失败")
+    Ctx.config, _ = load_config(Ctx.cfg_path)
+    if configured_duck_model(Ctx.config) != model:
+        raise RuntimeError("机型读回不一致，请查配置里的电池和舵机电流单位")
+    if running_pid:
+        result = user_unit(unit, "start")
+        if result.returncode:
+            raise RuntimeError(f"机型已写入，但 {unit} 启动失败：{result.stderr.strip()}")
+    return dict(msg="机型已写入" + ("，robotd 已重启" if running_pid else ""), model=model)
 
 
 def op_enable_duck_services(args):
-    command = duck_services_command()
+    command = image_config_command("duck-services")
     if not command:
         raise RuntimeError("当前系统或配置不支持 duck-services")
     result = subprocess.run([command, "on", "-y"], capture_output=True, text=True, timeout=60)
