@@ -35,6 +35,8 @@ LOCK, ID_ADDR, BAUD_ADDR, MODE, TORQUE, GOAL_POS, PRES_POS = 55, 5, 6, 33, 40, 4
 BAUDS = [1000000, 500000, 250000, 128000, 115200, 76800, 57600, 38400]  # 寄存器 6 的编号 0..7
 BROADCAST = 0xFE
 IMU_ID = 200
+HL2915_MODEL = 6922
+HD1910_MODEL = 7946
 IMU_MODEL = 0x16D6
 DEG_PER_COUNT = 360.0 / 4096
 
@@ -144,6 +146,14 @@ class Bus:
     def w16(self, sid, addr, v):
         v = int(v) & 0xFFFF
         return self.write(sid, addr, [v & 0xFF, v >> 8])
+
+    def calibrate_position(self, sid, position):
+        self._send(sid, 0x0B, struct.pack("<H", position))
+        self._status(sid)  # The caller verifies the persisted offset and position.
+
+    def reset_turns(self, sid):
+        self._send(sid, 0x0A)
+        self._status(sid)
 
     def must(self, err, what):
         if err is None:
@@ -794,6 +804,26 @@ def centered_correction(old, position):
     return (old + position) % 4096 - 2048
 
 
+def calibration_position(bus, sid):
+    """Read an unloaded shaft in one turn before changing its EEPROM centre."""
+    if bus.r8(sid, TORQUE) != 0:
+        raise BusError(f"ID {sid} 未确认卸力，请先托稳并卸力")
+    position = bus.pos(sid)
+    if position is None:
+        raise BusError(f"ID {sid} 读不到当前位置")
+    if 0 <= position <= 4095:
+        return position
+    bus.reset_turns(sid)
+    time.sleep(0.05)
+    after = bus.pos(sid)
+    if after is None or not 0 <= after <= 4095:
+        raise BusError(f"ID {sid} 清除圈数后仍读不到单圈位置，请断舵机电后再试")
+    movement = (after - position + 2048) % 4096 - 2048
+    if bus.r8(sid, TORQUE) != 0 or abs(movement) > 4:
+        raise BusError(f"ID {sid} 清除圈数后的位置或卸力状态未通过核对，请稳住关节再试")
+    return after
+
+
 def op_set_center_here(args):
     """把舵机现在的位置记成 2048：改 EEPROM 31（位置校正，BIT15 符号位）。
 
@@ -823,8 +853,6 @@ def op_calibration_positions(args):
     """Read raw positions while robotd is stopped, for a calibration draft."""
     if Ctx.usb:
         raise BusError("关节标定要用机器人总线")
-    if robotd_pids():
-        return {"robotd_running": True}
     config, _ = load_config(Ctx.cfg_path)
     cfg = (config or {}).get("bus", {})
     ids = cfg.get("joint_ids", [])
@@ -833,19 +861,23 @@ def op_calibration_positions(args):
     indices = args["indices"]
     if not indices or any(type(i) is not int or not 0 <= i < len(ids) for i in indices):
         raise BusError("请选择关节")
+    if robotd_pids():
+        if not args.get("take_bus"):
+            return {"robotd_running": True}
+        op_robotd_stop({"unit": args.get("unit", "robotd-dev")})
     with bus_session() as bus:
         positions = []
         for i in indices:
             sid = ids[i]
             position = bus.pos(sid)
-            if position is None or not 0 <= position <= 4095:
-                raise BusError(f"ID {sid} 无法读取单圈位置")
+            if position is None:
+                raise BusError(f"ID {sid} 没应答，请先检查总线")
             positions.append(position)
     return {"positions": positions}
 
 
 def op_center_calibration(args):
-    """Save the draft zero angles, transferring the offset to register 31 on HL-2915."""
+    """Save mechanical zeros, transferring the offsets to supported HLS servos."""
     if Ctx.usb:
         raise BusError("关节标定要用机器人总线")
     config, path = load_config(Ctx.cfg_path)
@@ -856,8 +888,8 @@ def op_center_calibration(args):
     signs, offsets = args["signs"], args["offsets"]
     if len(signs) != 15 or any(s not in (-1, 1) for s in signs):
         raise BusError("请先核对关节方向")
-    if len(offsets) != 15 or any(type(o) is not int or not -2048 <= o < 2048 for o in offsets):
-        raise BusError("零位超出舵机单圈范围")
+    if len(offsets) != 15 or any(type(o) is not int for o in offsets):
+        raise BusError("请重新记录关节零位")
     if (args["ids"] != ids or args["base_signs"] != (cfg.get("joint_signs") or [1] * 15)
             or args["base_offsets"] != (cfg.get("joint_offsets") or [0] * 15)):
         raise BusError("机器人配置有更新，请重新打开工作台读取最新标定")
@@ -879,15 +911,15 @@ def op_center_calibration(args):
             model = bus.r16(sid, 3)
             if model is None:
                 raise BusError(f"ID {sid} 无法读取舵机型号")
-            if model != 6922:
+            if model not in (HL2915_MODEL, HD1910_MODEL):
+                if not -2048 <= offsets[i] < 2048:
+                    raise BusError(f"ID {sid} 零位超出单圈范围，此型号暂不支持自动同步舵机中位")
                 continue  # Models without verified register-31 semantics retain a software offset.
-            value, position = bus.r16(sid, 31), bus.pos(sid)
-            if value is None or position is None or not 0 <= position <= 4095:
-                raise BusError(f"ID {sid} 无法读取单圈位置，请先恢复单圈读数")
-            if not 0 <= position - offsets[i] <= 4095:
-                raise BusError(f"ID {sid} 当前位置会跨过新坐标的跳变点，请先摆近零位")
+            value = bus.r16(sid, 31)
+            if value is None:
+                raise BusError(f"ID {sid} 读不到旧的位置校正")
             old[sid] = smag(value)
-            new[sid] = centered_correction(old[sid], 2048 + offsets[i])
+            new[sid] = (model, offsets[i])
             saved_offsets[i] = 0
         text = original
         for key, values in (("joint_signs", signs), ("joint_offsets", saved_offsets)):
@@ -907,16 +939,43 @@ def op_center_calibration(args):
         os.sync()
         attempted = []
         try:
-            for sid in new:
-                if new[sid] != old[sid]:
+            for sid, (model, offset) in new.items():
+                position = calibration_position(bus, sid)
+                # The draft can include earlier turns. The readback after writing
+                # the centre should be a single-turn coordinate on the same shaft.
+                target = (position - offset) % 4096
+                if model == HD1910_MODEL:
+                    # HD-1910 v3.46 is known to preserve zero through the HLS 0x0B command.
+                    bus.must(bus.w8(sid, LOCK, 0), "解锁 EEPROM")
+                    try:
+                        time.sleep(0.02)
+                        attempted.append(sid)
+                        bus.calibrate_position(sid, target)
+                        time.sleep(0.05)
+                    finally:
+                        bus.w8(sid, LOCK, 1)
+                    correction, actual = bus.r16(sid, 31), bus.pos(sid)
+                    if correction is None or actual is None:
+                        raise BusError(f"ID {sid} 读不到校准后的位置或偏移")
+                    # The HD-1910 can store the same correction one turn away.
+                    error = (smag(correction) - old[sid] - offset + 2048) % 4096 - 2048
+                    if not 0 <= actual <= 4095 or abs(actual - target) > 4 or abs(error) > 4:
+                        raise BusError(f"ID {sid} 校准后的位置和偏移未通过读回，请稳住该轴后重试")
+                else:
+                    correction = centered_correction(old[sid], 2048 + offset)
                     attempted.append(sid)
                     try:
-                        write_reg(bus, sid, 31, new[sid])
+                        write_reg(bus, sid, 31, correction)
                     finally:
                         if bus.r8(sid, LOCK) != 1:
                             bus.w8(sid, LOCK, 1)
                     time.sleep(0.05)
-                if bus.r16(sid, 31) != enc(new[sid]) or bus.r8(sid, LOCK) != 1:
+                    if bus.r16(sid, 31) != enc(correction):
+                        raise BusError(f"ID {sid} 位置校正读回失败")
+                    actual = bus.pos(sid)
+                    if actual is None or not 0 <= actual <= 4095 or abs(actual - target) > 4:
+                        raise BusError(f"ID {sid} 中位校正后的当前位置未通过读回，请稳住该轴后重试")
+                if bus.r8(sid, LOCK) != 1:
                     raise BusError(f"ID {sid} 位置校正或 EEPROM 锁读回失败")
             with open(temporary, "x", encoding="utf-8") as f:
                 f.write(text)

@@ -262,10 +262,6 @@ class Calib:
                 return False, "配置还没读到"
             signs, offsets = list(self.signs), list(self.offsets)
             base_signs, base_offsets = self.loaded
-        invalid = [f"{JOINT_CN[name]}（{offset}）" for name, offset in zip(JOINT_NAMES, offsets)
-                   if not -2048 <= offset < 2048]
-        if invalid:
-            return False, "零位超出舵机单圈范围：" + "、".join(invalid)
         if save_zeros:
             result = save_zeros(dict(signs=signs, offsets=offsets,
                                      base_signs=base_signs, base_offsets=base_offsets, ids=self.ids))
@@ -278,6 +274,10 @@ class Calib:
                 msg += "，已同步舵机中位 " + "、".join(map(str, result["centered_ids"]))
             msg += f"（备份 {result['backup']}）"
         else:
+            invalid = [f"{JOINT_CN[name]}（{offset}）" for name, offset in zip(JOINT_NAMES, offsets)
+                       if not -2048 <= offset < 2048]
+            if invalid:
+                return False, "零位超出舵机单圈范围：" + "、".join(invalid)
             try:
                 out = subprocess.run(["ssh", "-o", "BatchMode=yes", self.host, "python3", "-", self.path,
                                       "'" + json.dumps(signs) + "'", "'" + json.dumps(offsets) + "'"],
@@ -544,9 +544,14 @@ def make_handler(live, renderer, demo, calib, hold_call=None, robotd_unit="robot
                                 raise ValueError("请选择关节")
                             if not calib.snapshot()["ready"]:
                                 raise ValueError("配置还没读到")
-                            positions = (hold_call("calibration_positions", {"indices": indices}).get("positions")
-                                         if hold_call else None)
                             joints, _, stamp, *_ = live.get()
+                            positions = None
+                            if hold_call:
+                                params = {"indices": indices, "unit": robotd_unit,
+                                          "take_bus": not stamp or time.time() - stamp > 1.0}
+                                positions = hold_call("calibration_positions", params).get("positions")
+                                if positions is not None:
+                                    live.invalidate()
                             if positions is None and (not stamp or time.time() - stamp > 1.0):
                                 raise ValueError("还没收到最新实机读数，请等连接恢复再记录")
                             calib.zero(indices, joints, HOME if body.get("ref") == "home" else None, positions)

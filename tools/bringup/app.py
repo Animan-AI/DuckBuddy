@@ -199,7 +199,11 @@ class Calibration:
         with self.lock:
             if self.url:
                 return self.url
-            self.robot.call("robotd_start", {"unit": self.a.unit})
+            try:
+                self.robot.call("robotd_start", {"unit": self.a.unit})
+            except RuntimeError as error:
+                # Commissioning must still open when the current calibration cannot start robotd.
+                print(f"标定页：robotd 启动失败，可托稳卸力后直接读取舵机位置：{error}", flush=True)
             spec = importlib.util.spec_from_file_location("joint_align_server",
                                                           os.path.join(ROOT, "tools", "joint_align", "server.py"))
             ja = importlib.util.module_from_spec(spec)
