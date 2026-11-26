@@ -199,6 +199,7 @@ class Calibration:
         with self.lock:
             if self.url:
                 return self.url
+            self.robot.call("robotd_start", {"unit": self.a.unit})
             spec = importlib.util.spec_from_file_location("joint_align_server",
                                                           os.path.join(ROOT, "tools", "joint_align", "server.py"))
             ja = importlib.util.module_from_spec(spec)
@@ -208,7 +209,7 @@ class Calibration:
             threading.Thread(target=ja.reader, args=(live, self.a.host, False), daemon=True).start()
             calib = ja.Calib(self.a.host, self.a.config, self.a.restart_cmd, self.a.init_cmd)
             threading.Thread(target=calib.load, daemon=True).start()
-            handler = ja.make_handler(live, ja.Renderer(), False, calib, self.robot.call)
+            handler = ja.make_handler(live, ja.Renderer(), False, calib, self.robot.call, self.a.unit)
             srv = ThreadingHTTPServer((self.a.listen, self.a.port + 1), handler)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             self.url = self.a.port + 1

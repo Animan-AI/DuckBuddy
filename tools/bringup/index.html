@@ -119,7 +119,7 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
     <table>
       <tr><th>要做的事</th><th>robotd</th><th>原因</th></tr>
       <tr><td>舵机页（扫描、改 ID、摆动）<br>整机测试里的“舵机总线”“IMU”两项<br>IMU 固件页的“经总线核对”</td><td><b>停</b></td><td>robotd 一直占着 /dev/ttyS7，两边同时发包会互相打断</td></tr>
-      <tr><td>零位标定</td><td><b>开</b></td><td>标定页读的是 robotd 给出的关节角</td></tr>
+      <tr><td>零位标定</td><td>工作台自动切换</td><td>关节读数由 robotd 提供，滑杆微调时工作台接管舵机</td></tr>
       <tr><td>麦克风、喇叭、ToF、摄像头</td><td>都行</td><td>它们不走舵机总线；摄像头要先停 visiond</td></tr>
     </table>
     <p><b>停 robotd 不会卸力。</b>机器人站着时先让它坐下或躺下，或者先按<kbd>全部卸力</kbd>，再停 robotd。</p>
@@ -142,6 +142,20 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
       <div class="row"><button id="ov-refresh" class="primary">刷新</button>
       <button id="ov-pair">配对新手柄</button>
         <button id="ov-reconnect">重连代理</button></div>
+      <details id="ov-ssh" class="guide">
+        <summary>首次连接 SSH / 连不上怎么办</summary>
+        <p id="ov-ssh-status" class="muted" role="status"></p>
+        <ol>
+          <li>在电脑的 PowerShell 手动登录。第一次看到主机密钥提示时，确认地址是这台鸭子，再输入 <code>yes</code>。镜像初始密码是 <code>orangepi</code>，改过密码就用新密码。登录后输入 <code>exit</code> 回到电脑。</li>
+        </ol>
+        <pre><code id="ov-ssh-login"></code></pre>
+        <p>重刷后若提示 <code>REMOTE HOST IDENTIFICATION HAS CHANGED</code>，确认地址是刚重刷的鸭子后，在电脑清除该地址的旧记录，再执行上面的登录命令。</p>
+        <pre><code id="ov-ssh-remove"></code></pre>
+        <p>如果电脑还没有 <code>id_ed25519.pub</code>，先运行 <code>ssh-keygen -t ed25519</code>，使用默认保存位置。然后把公钥装到鸭子上。</p>
+        <pre><code id="ov-ssh-install"></code></pre>
+        <p>用下面的命令检查免密登录。能直接显示鸭子的主机名后，回来点「重连代理」。</p>
+        <pre><code id="ov-ssh-check"></code></pre>
+      </details>
       <table class="kv" id="ov-robot"></table>
       <h2>robotd</h2>
       <div id="ov-robotd" class="muted">—</div>
@@ -149,7 +163,7 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
         <button id="rd-stop" class="danger">停止 robotd</button>
         <button id="rd-start">启动 robotd</button>
       </div>
-      <div class="note">robotd 占着舵机总线：舵机页、总线和 IMU 测试要先停它；零位标定要它在跑。<b>停 robotd 不会卸力</b>。</div>
+      <div class="note">舵机页、总线和 IMU 测试前要停 robotd。零位标定会自动交接总线。<b>停 robotd 不会卸力</b>。</div>
       <h2>行走与手柄</h2>
       <div id="ov-driving" class="muted">—</div>
       <p class="note">「回 home」只摆站姿。完成关节映射和零位标定后，点「启用整机服务」加载行走策略并启动手柄服务。手柄连上后按 Start 启用行走，左摇杆控制前进和后退。</p>
@@ -340,13 +354,13 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
     </ol>
     <h3>第二步：记零位</h3>
     <ol>
-      <li>“参考”选<kbd>零位</kbd>，照着参考图把机器人摆好（腿伸直、头摆正）。</li>
-      <li>全身摆好后点<kbd>全部设为零位</kbd>，也可以选中某个关节点<kbd>所选关节设为零位</kbd>。嘴要闭到底再设零位。</li>
-      <li>点<kbd>写入配置</kbd>：先备份（<code>*.bak-时间</code>），再改 <span class="zr-config-name"></span> 的这两行，然后重启 robotd。</li>
+      <li>“参考”选<kbd>零位</kbd>，照着参考图把全身摆到接近零位，点<kbd>记录全身粗零位</kbd>。</li>
+      <li>逐个摆正后记录所选关节，或者用 −/+ 和滑杆微调。嘴闭合时记为零位。</li>
+      <li>卸力后点<kbd>保存零位</kbd>。工作台会备份标定，让 HL-2915 的机械零位对应舵机 2048，然后重启 robotd。</li>
     </ol>
     <h3>第三步：站在 home 上精调</h3>
     <ol>
-      <li><b>托好机器人</b>，点<kbd>写入并回 home</kbd>：robotd 重启（不断扭矩），机器人平滑地回到站姿 home。</li>
+      <li><b>托好机器人</b>，点<kbd>回站姿 home</kbd>检查已保存的标定。要保存草稿并试新站姿，先卸力，再点<kbd>保存并回 home</kbd>。</li>
       <li>放到桌面上，检查以下几点：
         <ul>
           <li>脚底贴平；</li>
@@ -356,7 +370,7 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
           <li>左右对称；</li>
           <li>能自己站住。</li>
         </ul></li>
-      <li>哪个关节偏了，就点那一行零点两边的<kbd>−</kbd>/<kbd>+</kbd>（每次 0.5°，在同一个指令角下让关节往负 / 正方向多转），再点<kbd>写入并回 home</kbd>看效果。</li>
+      <li>哪个关节偏了，就点那一行零点两边的<kbd>−</kbd>/<kbd>+</kbd>（每次 0.5°，在同一个指令角下让关节往负 / 正方向多转），再保存并检查站姿。</li>
       <li>经验（小黑 10-25）：
         <ul>
           <li>脚平以后躯干还前倾：按小腿、大腿的实际角度反算髋、膝、踝的修正量。</li>
@@ -367,9 +381,8 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
     </ol>
   </details>
   <div class="note">复用 <code>tools/joint_align</code>：实机关节角实时套到训练模型上渲染；每个关节可"反向"、"设为零位"、±0.5° 精调，
-    "写入配置"会先备份再改机器人上 <span id="zr-config"></span> 的 <code>joint_signs</code> / <code>joint_offsets</code>，
-    然后 <code id="zr-restart"></code>；"写入并回 home"再执行 <code id="zr-init"></code>。<br>
-    需要 robotd 在跑。<b>第一次连上会发 robot.relax（全身卸力）</b>，所以先让机器人躺好或托好。
+    保存零位会备份 <span id="zr-config"></span> 和本次调整的舵机中位，然后 <code id="zr-restart"></code>。「保存并回 home」再执行 <code id="zr-init"></code>。<br>
+    标定页会自动启动 robotd。<b>第一次连上会全身卸力</b>，请先让机器人躺好或托好。
     零位参考：大腿、小腿、躯干按页面里的"零位参考"图摆；站在 home 上时脚底贴平、IMU 躯干俯仰≈0。</div>
   <div class="row"><button id="zr-start" class="primary">开始标定</button><span id="zr-state" class="muted"></span></div>
   <div id="zr-frame"></div>
@@ -519,14 +532,42 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
 });
 
 // ---- 总览 ---------------------------------------------------------------------------------
+function showSshHelp(error) {
+  const host = String(INFO.host);
+  const address = host.slice(host.lastIndexOf("@") + 1);
+  const quote = value => "'" + value.replaceAll("'", "''") + "'";
+  const dest = quote(host);
+  $("ov-ssh-login").textContent = `ssh ${dest}`;
+  $("ov-ssh-remove").textContent = `ssh-keygen -R ${quote(address)}`;
+  $("ov-ssh-install").textContent = `Get-Content "$env:USERPROFILE\\.ssh\\id_ed25519.pub" | ssh ${dest} 'umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys'`;
+  $("ov-ssh-check").textContent = `ssh -o BatchMode=yes ${dest} hostname`;
+  const status = $("ov-ssh-status");
+  if (!error) {
+    status.textContent = "当前工作台已通过 SSH 连上鸭子。";
+    return;
+  }
+  $("ov-ssh").open = true;
+  if (/REMOTE HOST IDENTIFICATION HAS CHANGED/i.test(error)) {
+    status.textContent = "SSH 主机密钥变了。核对地址后，按下面的重刷处理步骤操作。";
+  } else if (/Host key verification failed/i.test(error)) {
+    status.textContent = "工作台未能确认 SSH 主机密钥。先在 PowerShell 手动登录一次。";
+  } else if (/Permission denied/i.test(error)) {
+    status.textContent = "SSH 登录被拒绝。请确认账户，并安装这台电脑的公钥。";
+  } else {
+    status.textContent = "先用下面的 SSH 命令确认地址和具体报错。连接超时时，核对鸭子的 IP 和网络。";
+  }
+}
+
 async function refresh() {
   $("conn").textContent = "连接 " + INFO.host + " …";
   try {
     HELLO = await call("hello");
   } catch (e) {
     $("conn").innerHTML = `<span class="red">${esc(INFO.host)} 连不上</span>`;
+    showSshHelp(e.message);
     toast(e.message, true); return;
   }
+  showSshHelp();
   const h = HELLO, b = h.bus || {};
   $("conn").textContent = `${h.hostname}（${INFO.host}）· robotd ${h.robotd_pids?.length ? "运行中" : "未运行"}`;
   const rows = [["主机名", h.hostname], ["Python", h.python], ["舵机串口", `${h.port} @ ${h.baud}` + (h.port_exists ? "" : "（不存在！）")],
@@ -1003,13 +1044,13 @@ $("wz-check").onclick = e => busy(e.target, async () => {
 
 // ---- 零位 ---------------------------------------------------------------------------------
 $("zr-start").onclick = e => busy(e.target, async () => {
-  await refresh();
-  if (!HELLO?.robotd_pids?.length) return toast("robotd 没在跑：先在总览页启动它", true);
+  if (INFO.calib_port) return showCalib(INFO.calib_port);
   if (!confirm("开始标定会让 robotd 全身卸力（robot.relax）。机器人躺好或托好了吗？")) return;
   const r = await post("/api/calib/start");
   showCalib(r.port);
 });
 function showCalib(port) {
+  INFO.calib_port = port;
   const url = `${location.protocol}//${location.hostname}:${port}/`;
   $("zr-state").innerHTML = `标定页在 <a href="${url}" target="_blank">${url}</a>（也可单独开）`;
   if (!$("zr-frame").firstChild) $("zr-frame").innerHTML = `<iframe src="${url}"></iframe>`;

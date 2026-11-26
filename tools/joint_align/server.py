@@ -6,14 +6,14 @@ robotd 的 `robot.state` 每拍给出 15 个关节角（已套 joint_ids / signs
 （`model/` 是从训练服务器 `robot/microduck_hl2915/` 取来的，运动学与 hardware/original 一致），
 扭矩关着时用手摆机器人，对照画面里的模型是否同向、同角度。
 
-    python tools/joint_align/server.py                     # 连 OPi，http://localhost:8770
+    python tools/joint_align/server.py --host orangepi@duck-1a2b.local  # http://localhost:8770
     python tools/joint_align/server.py --demo              # 不连机器人，只看模型（滑块）
 
 OPi 上要有 robotd 在跑；`--start-robotd` 会替你在 OPi 上启动
 （~/robot/robotd --params robotd-test.toml）。连上时先发一次 robot.relax 关扭矩，之后只读；
 本工具从不发 enable / move。
 
-标定（2026-10-25，小黑）：启动时从 OPi 读 robotd 的配置（--config）里的 joint_signs / joint_offsets。
+标定：启动时从 OPi 读 robotd 的配置（--config）里的 joint_signs / joint_offsets。
 网页上每个关节可以"反向"（翻 sign），也可以把当前姿势"设为零位"（重算 offset）；改动马上
 用在显示和模型上（robot.state 的角度按 robotd 现用的值还原成编码器读数，再按新值换算）。
 "写入配置"先备份再改 toml 里这两行，有 --restart-cmd 就接着重启 robotd 让它生效。
@@ -102,8 +102,9 @@ class Live:
 
     def set(self, joints, gravity, policy):
         with self.lock:
-            if joints and len(joints) == 15:
-                self.joints = list(joints)
+            if not joints or len(joints) != 15:
+                return
+            self.joints = list(joints)
             if gravity and len(gravity) == 3:
                 self.gravity = list(gravity)
             self.policy = policy
@@ -113,6 +114,11 @@ class Live:
     def get(self):
         with self.lock:
             return list(self.joints), list(self.gravity), self.stamp, self.status, self.policy
+
+    def invalidate(self):
+        with self.lock:
+            self.stamp = 0.0
+            self.status = "等待 robotd 的新读数"
 
 
 def reader(live, host, start_robotd):
@@ -160,7 +166,7 @@ import json, os, sys, tomllib
 path = os.path.realpath(os.path.expanduser(sys.argv[1]))
 bus = tomllib.load(open(path, "rb")).get("bus", {})
 print(json.dumps({"path": path, "signs": bus.get("joint_signs") or [1] * 15,
-                  "offsets": bus.get("joint_offsets") or [0] * 15}))
+                  "offsets": bus.get("joint_offsets") or [0] * 15, "ids": bus.get("joint_ids")}))
 '''
 
 # OPi 端：备份后只改 joint_signs / joint_offsets 两行（各自一行的数组），上面加一行注释
@@ -195,6 +201,7 @@ class Calib:
         self.lock = threading.Lock()
         self.loaded = None          # (signs, offsets) robotd 正在用的
         self.signs = self.offsets = None
+        self.ids = None
         self.path = None
         self.msg = "读取配置中…"
 
@@ -210,6 +217,7 @@ class Calib:
             self.loaded = ([int(s) for s in cfg["signs"]], [int(o) for o in cfg["offsets"]])
             self.signs, self.offsets = list(self.loaded[0]), list(self.loaded[1])
             self.path = cfg["path"]
+            self.ids = cfg["ids"]
             self.msg = f"已读配置 {self.path}"
 
     def _counts(self, i, a):
@@ -227,14 +235,15 @@ class Calib:
             if self.loaded:
                 self.signs[i] = -self.signs[i]
 
-    def zero(self, idx, joints, target=None):
+    def zero(self, idx, joints, target=None, positions=None):
         """把这些关节当前的姿势记成 0°；给了 target（如站姿 HOME）就记成 target[i]。
         a' = s·(raw − 2048 − o)·k = t  →  o = (raw − 2048) − s·t/k，s 用试用中的方向。"""
         with self.lock:
             if self.loaded:
-                for i in idx:
+                for j, i in enumerate(idx):
                     t = target[i] if target else 0.0
-                    self.offsets[i] = int(round(self._counts(i, joints[i]) - self.signs[i] * t / RAD_PER_COUNT))
+                    counts = positions[j] - 2048 if positions is not None else self._counts(i, joints[i])
+                    self.offsets[i] = round(counts - self.signs[i] * t / RAD_PER_COUNT)
 
     def nudge(self, i, deg):
         """同一个指令角下，让这个关节实际往正方向多转 deg 度（读数随之减小 deg）。"""
@@ -247,24 +256,37 @@ class Calib:
             if self.loaded:
                 self.signs, self.offsets = list(self.loaded[0]), list(self.loaded[1])
 
-    def save(self, home=False):
+    def save(self, home=False, save_zeros=None):
         with self.lock:
             if not self.loaded:
                 return False, "配置还没读到"
             signs, offsets = list(self.signs), list(self.offsets)
+            base_signs, base_offsets = self.loaded
         invalid = [f"{JOINT_CN[name]}（{offset}）" for name, offset in zip(JOINT_NAMES, offsets)
-                   if abs(offset) > 2048]
+                   if not -2048 <= offset < 2048]
         if invalid:
-            return False, "零位偏移超出 ±2048，未写入：" + "、".join(invalid)
-        try:
-            out = subprocess.run(["ssh", "-o", "BatchMode=yes", self.host, "python3", "-", self.path,
-                                  "'" + json.dumps(signs) + "'", "'" + json.dumps(offsets) + "'"],
-                                 input=WRITE_CONFIG, capture_output=True, text=True, timeout=20)
-        except Exception as e:  # noqa: BLE001
-            return False, f"写入失败：{e}"
-        if out.returncode != 0:
-            return False, "写入失败：" + (out.stderr.strip().splitlines() or ["?"])[-1]
-        msg = f"已写入 {self.path}（备份 {out.stdout.strip()}）"
+            return False, "零位超出舵机单圈范围：" + "、".join(invalid)
+        if save_zeros:
+            result = save_zeros(dict(signs=signs, offsets=offsets,
+                                     base_signs=base_signs, base_offsets=base_offsets, ids=self.ids))
+            offsets = result["offsets"]
+            with self.lock:
+                self.signs, self.offsets = list(signs), list(offsets)
+                self.loaded = (signs, offsets)
+            msg = "已保存关节零位"
+            if result["centered_ids"]:
+                msg += "，已同步舵机中位 " + "、".join(map(str, result["centered_ids"]))
+            msg += f"（备份 {result['backup']}）"
+        else:
+            try:
+                out = subprocess.run(["ssh", "-o", "BatchMode=yes", self.host, "python3", "-", self.path,
+                                      "'" + json.dumps(signs) + "'", "'" + json.dumps(offsets) + "'"],
+                                     input=WRITE_CONFIG, capture_output=True, text=True, timeout=20)
+            except Exception as e:  # noqa: BLE001
+                return False, f"写入失败：{e}"
+            if out.returncode != 0:
+                return False, "写入失败：" + (out.stderr.strip().splitlines() or ["?"])[-1]
+            msg = f"已写入 {self.path}（备份 {out.stdout.strip()}）"
         if self.restart_cmd:
             r = subprocess.run(["ssh", "-o", "BatchMode=yes", self.host, self.restart_cmd],
                                capture_output=True, text=True, timeout=30)
@@ -371,24 +393,29 @@ class Renderer:
                 done.put(b"")
 
 
-def make_handler(live, renderer, demo, calib, hold_call=None):
+def make_handler(live, renderer, demo, calib, hold_call=None, robotd_unit="robotd-dev"):
     page = open(os.path.join(HERE, "index.html"), encoding="utf-8").read()
     slider = {"joints": list(HOME)}
     hold_lock = threading.Lock()
     held_degrees = None
+    held_origin = None
 
     def adjust_hold(body):
-        nonlocal held_degrees
+        nonlocal held_degrees, held_origin
         if body.get("release"):
             hold_call("calibration_hold", {"release": True})
-            if body.get("apply") and held_degrees is not None:
+            applied = bool(body.get("apply") and held_degrees is not None)
+            if applied:
                 with calib.lock:
                     calib.offsets = [
                         o + s * round(math.radians(d) / RAD_PER_COUNT)
                         for o, s, d in zip(calib.offsets, calib.signs, held_degrees)
                     ]
             held_degrees = None
-            return "已卸力" + ("，微调已应用，请写入配置" if body.get("apply") else "")
+            held_origin = None
+            if applied:
+                return "已卸力，滑杆调整已计入本页零位。请点「回零位」复查"
+            return "已卸力"
         with calib.lock:
             if not calib.loaded:
                 raise ValueError("配置还没读到")
@@ -401,15 +428,36 @@ def make_handler(live, renderer, demo, calib, hold_call=None):
             updated[i] = degrees
             indices = [i]
         else:
+            if held_degrees is not None:
+                raise ValueError("请先结束当前微调")
             updated = [0.0] * len(JOINT_NAMES)
+            if body.get("current"):
+                result = hold_call("calibration_hold", {
+                    "capture_current": True, "take_bus": True, "unit": robotd_unit,
+                })
+                if result.get("ok") is False:
+                    raise ValueError(result["msg"])
+                held_origin = result["origin"]
+                held_degrees = updated
+                return result["msg"]
             indices = range(len(JOINT_NAMES))
-        targets = {i: 2048 + offsets[i] + signs[i] * round(math.radians(updated[i]) / RAD_PER_COUNT)
-                   for i in indices}
-        if any(abs(target - 2048) > 2048 for target in targets.values()):
+        delta = {i: signs[i] * round(math.radians(updated[i]) / RAD_PER_COUNT) for i in indices}
+        if any(abs(offsets[i] + d) > 2048 for i, d in delta.items()):
             raise ValueError("微调后的零位超出 ±2048，请先处理零点跳变")
-        hold_call("calibration_hold", {"targets": targets})
+        origin = held_origin if held_origin is not None else [2048 + o for o in offsets]
+        targets = {i: origin[i] + d for i, d in delta.items()}
+        args = {
+            "targets": targets, "take_bus": "i" not in body, "unit": robotd_unit,
+        }
+        result = hold_call("calibration_hold", args)
+        if result.get("released"):
+            held_degrees = held_origin = None
+        if result.get("ok") is False:
+            raise ValueError(result["msg"])
+        if "i" not in body:
+            held_origin = origin
         held_degrees = updated
-        return "已到位并保持"
+        return result["msg"]
 
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -442,7 +490,8 @@ def make_handler(live, renderer, demo, calib, hold_call=None):
                             home=HOME, gravity=gravity, pitch=pitch, roll=roll, demo=demo,
                             age=time.time() - stamp if stamp else None, status=status, policy=policy,
                             calib=calib.snapshot() if calib else dict(ready=False, msg="演示模式"),
-                            hold_available=bool(hold_call), held_degrees=held_degrees)
+                            hold_available=bool(hold_call), held_degrees=held_degrees,
+                            go_home_available=bool(hold_call and calib))
                 return self._send(json.dumps(body).encode(), "application/json")
             if u.path == "/frame":
                 joints, gravity, *_ = self._pose()
@@ -459,22 +508,14 @@ def make_handler(live, renderer, demo, calib, hold_call=None):
             u = urlparse(self.path)
             n = int(self.headers.get("Content-Length", "0"))
             body = json.loads(self.rfile.read(n) or b"{}")
-            if u.path in ("/hold", "/center-all") and hold_call:
+            if u.path in ("/hold", "/go-home") and hold_call:
                 with hold_lock:
                     try:
-                        if u.path == "/center-all":
+                        if u.path == "/go-home":
                             if held_degrees is not None:
                                 raise ValueError("请先卸力并结束滑轨微调")
-                            with calib.lock:
-                                if not calib.loaded:
-                                    raise ValueError("配置还没读到")
-                                signs = list(calib.signs)
-                            rebased = hold_call("center_calibration", {"signs": signs})
-                            with calib.lock:
-                                calib.offsets = list(rebased["offsets"])
-                                calib.loaded = (signs, list(calib.offsets))
-                                calib.msg = rebased["msg"]
-                            msg = rebased["msg"] + "；回总览启动 robotd，再检查站姿"
+                            msg = hold_call("calibration_home", {"unit": robotd_unit})["msg"]
+                            calib.msg = msg
                         else:
                             msg = adjust_hold(body)
                         result = dict(ok=True, msg=msg)
@@ -487,26 +528,41 @@ def make_handler(live, renderer, demo, calib, hold_call=None):
                     slider["joints"] = [float(x) for x in j]
                 return self._send(b"{}", "application/json")
             if calib and u.path in ("/flip", "/nudge", "/zero", "/reset", "/save"):
-                if held_degrees is not None or hold_lock.locked():
-                    return self._send(json.dumps(dict(ok=False, msg="请先卸力并结束滑轨微调")).encode(),
-                                      "application/json")
-                ok, msg = True, ""
-                if u.path == "/flip":
-                    calib.flip(int(body["i"]))
-                elif u.path == "/nudge":
-                    calib.nudge(int(body["i"]), float(body["deg"]))
-                elif u.path == "/zero":
-                    joints, _, stamp, *_ = live.get()
-                    if not stamp or time.time() - stamp > 1.0:
-                        ok, msg = False, "实机读数不是最新的，没记"
-                    else:
-                        idx = [int(body["i"])] if body.get("i") is not None else range(len(JOINT_NAMES))
-                        calib.zero(idx, joints, HOME if body.get("ref") == "home" else None)
-                elif u.path == "/reset":
-                    calib.reset()
-                else:
-                    ok, msg = calib.save(home=bool(body.get("home")))
-                calib.msg = msg or calib.msg
+                with hold_lock:
+                    if held_degrees is not None:
+                        return self._send(json.dumps(dict(ok=False, msg="请先卸力并结束滑轨微调")).encode(),
+                                          "application/json")
+                    try:
+                        ok, msg = True, ""
+                        if u.path == "/flip":
+                            calib.flip(int(body["i"]))
+                        elif u.path == "/nudge":
+                            calib.nudge(int(body["i"]), float(body["deg"]))
+                        elif u.path == "/zero":
+                            indices = [int(body["i"])] if body.get("i") is not None else list(range(len(JOINT_NAMES)))
+                            if any(not 0 <= i < len(JOINT_NAMES) for i in indices):
+                                raise ValueError("请选择关节")
+                            if not calib.snapshot()["ready"]:
+                                raise ValueError("配置还没读到")
+                            positions = (hold_call("calibration_positions", {"indices": indices}).get("positions")
+                                         if hold_call else None)
+                            joints, _, stamp, *_ = live.get()
+                            if positions is None and (not stamp or time.time() - stamp > 1.0):
+                                raise ValueError("还没收到最新实机读数，请等连接恢复再记录")
+                            calib.zero(indices, joints, HOME if body.get("ref") == "home" else None, positions)
+                            msg = "已记录全身参考，可继续逐轴精调" if len(indices) > 1 else "已记录所选关节"
+                        elif u.path == "/reset":
+                            calib.reset()
+                        else:
+                            def save_zeros(args):
+                                result = hold_call("center_calibration", {**args, "unit": robotd_unit})
+                                live.invalidate()
+                                return result
+                            ok, msg = calib.save(home=bool(body.get("home")),
+                                                 save_zeros=save_zeros if hold_call else None)
+                    except (RuntimeError, ValueError, KeyError, subprocess.SubprocessError) as error:
+                        ok, msg = False, str(error)
+                    calib.msg = msg or calib.msg
                 return self._send(json.dumps(dict(ok=ok, msg=msg)).encode(), "application/json")
             self._send(b"{}", "application/json", 404)
 
@@ -515,7 +571,7 @@ def make_handler(live, renderer, demo, calib, hold_call=None):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--host", default="orangepi@<robot-ip>")
+    ap.add_argument("--host", help="机器人的 SSH 地址，如 orangepi@duck-1a2b.local")
     ap.add_argument("--port", type=int, default=8770)
     ap.add_argument("--demo", action="store_true")
     ap.add_argument("--start-robotd", action="store_true")
@@ -523,6 +579,8 @@ def main():
     ap.add_argument("--restart-cmd", default="", help="写入配置后在 OPi 上执行，让 robotd 重新读配置")
     ap.add_argument("--init-cmd", default="", help="\"写入并回 home\"在重启后执行，让机器人上扭矩回 home")
     a = ap.parse_args()
+    if not a.demo and not a.host:
+        ap.error("实机模式需要 --host，离线预览使用 --demo")
 
     live = Live()
     calib = None
