@@ -17,7 +17,7 @@ lead: 从开机、充电、聊天和手柄行走开始，用 AI Agent 做一个�
 | 机器人 | 锂电池 | HL-2915 用 3S LiPo（满充 12.60 V）或 3S LiHV（满充 13.05 V）。HD-1910 用普通 2S LiPo（满充 8.40 V）。详见[充电](#charge) |
 | 存储 | TF 卡 16 GB 以上 + 读卡器 | 镜像约 9.5 GB |
 | 电脑 | Windows 10/11 | 和机器鸭连在同一个 WiFi 里 |
-| 电脑 | 系统镜像 | 从 [GitHub Releases](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8) 下载 r8 的 `.7z` 和 `.img.sha256`。旧版 r4 仍可在[百度网盘](https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh)下载（提取码 `njvh`） |
+| 电脑 | 系统镜像 | 手机热点配网选 [r10 预览镜像](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r10)，下载 `.7z` 和 `.img.sha256`。[原有 r8](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8) 和[百度网盘 r4](https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh)（提取码 `njvh`）也可下载 |
 | 电脑 | balenaEtcher | 烧卡软件，[etcher.balena.io](https://etcher.balena.io) |
 | 电脑 | Python 3.11 以上 | 装好后运行 `pip install pyserial mujoco numpy Pillow` |
 | 电脑 | DuckBuddy 仓库 | 从 [github.com/Animan-AI/DuckBuddy](https://github.com/Animan-AI/DuckBuddy) 下载：用 `git clone`，或点 Code → Download ZIP 后解压。工作台在 `tools/bringup`，零位标定还要用到 `tools/joint_align` |
@@ -31,7 +31,7 @@ lead: 从开机、充电、聊天和手柄行走开始，用 AI Agent 做一个�
 
 烧一张卡约 10–15 分钟。
 
-把下载的 r8 `.7z` 和 `.img.sha256` 放在同一个文件夹。用 7-Zip 解压 `.7z`，得到 `DuckBuddy-opizero3w-trixie-20261120-r8.img`。
+把同一版本的 `.7z` 和 `.img.sha256` 放在同一个文件夹。用 7-Zip 解压 `.7z`，得到 `.img` 文件。r10 的文件名是 `DuckBuddy-opizero3w-trixie-20261125-r10-hotspot.img`。
 
 1. **核对镜像没有下坏。** 在镜像所在的文件夹里打开 PowerShell，运行：
 
@@ -58,7 +58,8 @@ lead: 从开机、充电、聊天和手柄行走开始，用 AI Agent 做一个�
 
 1. 把卡插进 Orange Pi。断电时先按[摄像头排线和 ToF 焊接实拍](assembly.html#camera-tof)检查头部接线。用 **PH2.0 3P 双头反向线（300 mm）**连接 PDB J5 和 HAT J2，对照[两块板的接线图](assembly.html#pdb-hat-wiring)逐根核对 GND、VBAT 和 DATA，再把电池接上 PDB。这时舵机还不上力，可以让鸭子平躺在桌上。
 2. **让它连上 WiFi。** 按你的镜像版本选择：
-    - **r4 或更新版。** 开机前接好麦克风、扬声器和摄像头。等系统启动后说「豆豆，扫码」，听到提示后把手机上的 Wi‑Fi 分享二维码放在摄像头前约 20–30 厘米，保持一两秒。连上后会逐位播报 IPv4 地址，也可以说「豆豆，IP 是多少」再听一次。记下 IP 后跳到第 4 条，用 IP 登录。配网时无需键盘、SSH 或已有网络。
+    - **r10 热点配网预览版。** 没装摄像头也能用，按下面的[手机热点配网](#hotspot-r10)操作。
+    - **r4 或更新版的语音扫码。** 开机前接好麦克风、扬声器和摄像头。等系统启动后说「豆豆，扫码」，听到提示后把手机上的 Wi‑Fi 分享二维码放在摄像头前约 20–30 厘米，保持一两秒。连上后会逐位播报 IPv4 地址，也可以说「豆豆，IP 是多少」再听一次。记下 IP 后跳到第 4 条，用 IP 登录。r10 扫不到码时会播报热点配网的方法。
     - 镜像文件名带 `-wifi`（课程会场用的）：开机会自动连上会场 WiFi，直接看第 3 条。
     - 旧版或语音配网失败：接 mini HDMI 显示器和 USB 键盘，屏幕上会出现 `duck-XXXX login:`（顺便记下这个名字）。用户名和密码都是 `orangepi`。登录后运行 `sudo nmtui`，选 Activate a connection，挑你的 WiFi，输入密码。连上后运行 `ip -4 a show wlan0`，`inet` 后面就是 IP。
     - 没有显示器：用 USB 串口调试板接板子的调试口，在电脑上用串口工具（波特率 115200）登录，后面的操作同上。
@@ -89,6 +90,16 @@ duck-model hd1910
 它会先备份原配置，再把电流单位、电池（2S、最高 8.4 V）、走路策略和关节方向改成 HD-1910 的。不带参数运行 `duck-model`，可以看现在设的是哪种。HL-2915 的鸭子跳过这一条。
 
 后面凡是写 `duck-XXXX.local` 的地方，都换成你这只鸭子的名字，或者直接写 IP。
+
+### r10：用手机连鸭子热点 {#hotspot-r10}
+
+1. 刷好 [r10 预览镜像](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r10)，插卡开机，等首次启动完成。有麦克风和扬声器时，也可以说「豆豆，热点配网」听操作指引。
+2. 在手机的 Wi‑Fi 设置中连接 **`DuckBuddy-XXXXXX`**，密码是 **`duck2026`**（字母小写）。如果手机提示这个热点无法上网，选「保持连接」。
+3. 打开手机浏览器，在地址栏输入 **`http://10.42.0.1/`**。填鸭子要加入的 Wi‑Fi 名称和密码，家用网络通常选 WPA / WPA2，纯 WPA3 的网络选 WPA3 专用。点「连接 Wi‑Fi」。
+4. 提交后，鸭子的热点会暂时消失。连接成功后，鸭子会留在家里的 Wi‑Fi。有扬声器时会播报 IP。也可以把手机连回同一个 Wi‑Fi，在路由器的设备列表找以 `duck-` 开头的主机。
+5. 如果连不上，约一分钟内 `DuckBuddy-XXXXXX` 热点会恢复。手机重新连进去，核对名称、密码和加密方式后再试。
+
+拿到 IP 后，按上面的「第一次登录并改密码」登录，再做[工作台免密登录](#step3)。这是预览功能，镜像和配网流程已通过离线校验，实机冷启动仍待验证。
 
 ## 第三步：让电脑免密登录 {#step3}
 

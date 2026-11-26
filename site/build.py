@@ -20,7 +20,8 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 OUT = HERE / "_site"
 MEDIA = ["demo.gif", "wechat-group.png", "wechat-group-2.png", "arch-software-zh.png", "arch-hardware-zh.png"]
-IMAGE_URL = "https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8"
+IMAGE_URL = "https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r10"
+R8_IMAGE_URL = "https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8"
 LEGACY_IMAGE_URL = "https://pan.baidu.com/s/14wBtz3ptDRZAbFjLD1jfiQ?pwd=njvh"
 NAV = [("index", "首页"), ("bom", "物料清单"), ("assembly", "组装说明"), ("tutorial", "新手教程")]
 
@@ -42,6 +43,7 @@ def render(path: Path) -> tuple[dict, str, str]:
         return meta, body, ""
     if path.name == "tutorial.md":
         guide = (REPO / "docs" / "robot" / "GETTING-STARTED-CN.md").read_text(encoding="utf-8")
+        guide = guide.replace("https://animan-ai.github.io/DuckBuddy/tutorial.html#", "#")
         body = body.replace("{{GETTING_STARTED_GUIDE}}", guide.strip(), 1)
     # superfences: code blocks inside list items (a step's command), which fenced_code does not do
     md = markdown.Markdown(extensions=["tables", "pymdownx.superfences", "attr_list", "toc", "sane_lists"],
@@ -60,7 +62,8 @@ def main():
         shutil.rmtree(OUT)
     (OUT / "media").mkdir(parents=True)
     template = (HERE / "template.html").read_text(encoding="utf-8")
-    image_link = (f'<a class="btn primary" href="{IMAGE_URL}">GitHub 下载 r8</a> '
+    image_link = (f'<a class="btn primary" href="{IMAGE_URL}">GitHub 下载 r10 预览</a> '
+                  f'<a href="{R8_IMAGE_URL}">GitHub 下载 r8</a> · '
                   f'<a href="{LEGACY_IMAGE_URL}">百度网盘 r4</a>（提取码 <code>njvh</code>）')
     for page in sorted((HERE / "content").glob("*.*")):
         meta, body, toc = render(page)

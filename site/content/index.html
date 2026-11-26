@@ -67,9 +67,20 @@ home: true
 </section>
 
 <section class="steps" id="wifi-setup">
-  <h2>首次开机语音联网</h2>
-  <p>使用 r4 或更新版镜像，接好麦克风、扬声器和摄像头后开机。说「豆豆，扫码」，听到提示后，把手机上的 Wi‑Fi 分享二维码放到摄像头前约 20–30 厘米。连上后，鸭子会逐位播报 IP。配网时无需键盘、SSH 或已有网络，运动服务仍在标定后启用。</p>
-  <p><a href="tutorial.html#step2">查看首次开机联网步骤</a> · 语音配网仍待实机验证。</p>
+  <h2>首次开机配网</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>手机连鸭子热点（r10 预览）</h3>
+      <p>手机连上 <code>DuckBuddy-XXXXXX</code>，密码 <code>duck2026</code>。保持连接后，在浏览器输入 <code>http://10.42.0.1/</code>，填写家里的 Wi‑Fi。没有摄像头也能用。</p>
+      <p><a href="tutorial.html#hotspot-r10">查看手机热点配网步骤</a></p>
+    </div>
+    <div class="card">
+      <h3>语音扫码</h3>
+      <p>接好摄像头、麦克风和扬声器，说「豆豆，扫码」，再出示手机的 Wi‑Fi 分享二维码。r10 也能说「豆豆，热点配网」，听手机连接的方法。有扬声器时，联网成功会播报 IP。</p>
+      <p><a href="tutorial.html#step2">查看首次开机与扫码步骤</a></p>
+    </div>
+  </div>
+  <p class="muted">r10 热点配网功能已通过离线验证，实机冷启动、手机连接和语音播报待验证。</p>
 </section>
 
 <section class="steps" id="gamepad">
@@ -93,7 +104,7 @@ home: true
   <div class="cards">
     <div class="card">
       <h3>系统镜像</h3>
-      <p>适用于 Orange Pi Zero 3W 的 r8 预览镜像（Debian trixie），支持 HL-2915（3S）和 HD-1910（2S）。下载 7-Zip 压缩包，解压后用附带的 <code>.sha256</code> 核对镜像。</p>
+      <p>r10 热点配网预览镜像适用于 Orange Pi Zero 3W（Debian trixie），支持 HL-2915（3S）和 HD-1910（2S）。下载 7-Zip 压缩包，解压后用附带的 <code>.sha256</code> 核对镜像。</p>
       <p>后台可切换模型供应商和 TTS，切回时会恢复该服务已保存的 Key。<a href="tutorial.html#online-model">查看模型与声音设置</a>。</p>
       <p>{{IMAGE_LINK}}</p>
     </div>
