@@ -23,7 +23,7 @@ lead: 从开机、充电、聊天和手柄行走开始，用 AI Agent 做一个�
 | 电脑 | DuckBuddy 仓库 | 从 [github.com/Animan-AI/DuckBuddy](https://github.com/Animan-AI/DuckBuddy) 下载：用 `git clone`，或点 Code → Download ZIP 后解压。工作台在 `tools/bringup`，零位标定还要用到 `tools/joint_align` |
 | 网络 | 2.4 GHz WiFi | 路由器或手机热点都行 |
 | 备用 | mini HDMI 线 + 显示器 + USB 键盘 | 只在连不上 WiFi 时用 |
-| 备用 | 蓝牙手柄 | Xbox 模式的手柄（如北通 BSP-G6） |
+| 备用 | 蓝牙手柄 | 支持经典蓝牙 Xbox 模式的手柄，例如 [BSP-G6](#gamepad-bsp-g6) |
 
 机器鸭要用的软件，镜像里已经全部装好，不用另外安装。
 
@@ -229,7 +229,40 @@ duck-model hd1910
 
 ## 第九步：手柄与名字 {#step9}
 
-### 用工作台配对手柄
+### BSP-G6 手柄快速配对 {#gamepad-bsp-g6}
+
+<figure class="photo annot" style="max-width:609px">
+  <div class="annot-img">
+    <a href="img/assembly/bsp-g6-gamepad.jpg"><img src="img/assembly/bsp-g6-gamepad.jpg" alt="BSP-G6 手柄正面，标出中央带 BSP 标志的 Home、中间右侧的 Start、中间左侧的 Select，以及左、右摇杆。" width="609" height="459" loading="lazy"></a>
+    <span class="mark" style="left:46%;top:7%" aria-hidden="true">1</span>
+    <span class="mark" style="left:53%;top:19%" aria-hidden="true">2</span>
+    <span class="mark" style="left:33%;top:20%" aria-hidden="true">3</span>
+    <span class="mark" style="left:14%;top:17%" aria-hidden="true">4</span>
+    <span class="mark" style="left:57%;top:44%" aria-hidden="true">5</span>
+  </div>
+  <figcaption>① Home（带 BSP 标志） · ② Start（≡） · ③ Select（双方框） · ④ 左摇杆 · ⑤ 右摇杆。点击可放大。</figcaption>
+</figure>
+
+1. **拨到 X 档。** 用手柄背面的模式拨键选 **X（X-input）**，再长按正面 **Home** 约 3 秒，等指示灯快闪。扫描时设备名通常为 **Xbox Wireless Controller**。[BSP-G6 手柄说明书](https://manuals.plus/m/8edfc67d2c42e44c00699cb94b13d86a548c1148b76addd16e45adbf713629cf)
+2. **在鸭子上配对。** 在电脑工作台「总览」点击**配对新手柄**，等待结果。页面显示「手柄已配对并连接」、手柄灯变常亮，就可以用了。如果显示「手柄已配对，按 Home 键回连」，短按一次 **Home**。
+3. **下次直接回连。** 鸭子开机后，手柄仍留在 X 档，短按 **Home**，等灯常亮。更换鸭子或更换手柄时，再走一次配对流程。
+
+刷了 **r3 或更新版镜像**，首次开机也可利用约 90 秒的自动扫描窗口配对。错过窗口就点工作台的「配对新手柄」。多组同场时可以轮流配对，让当前要配的手柄快闪。
+
+### 第一次用手柄走路 {#gamepad-control}
+
+按[第八步](#step8)启用整机服务后，先托稳鸭子，短按 **Start**。站稳后把双脚放在平整、防滑的地面上，轻推左摇杆前进。松开摇杆让它回中，确认鸭子停住，再试后退、横移和转向。
+
+| 按键 | DuckBuddy 上的用法 |
+|---|---|
+| ① Home | 长按约 3 秒进入配对；已配对时短按唤醒或回连 |
+| ② Start（≡） | 短按切换行走控制。关节可能上力并站起，按之前先托稳 |
+| ④ 左摇杆 | 上下控制前进和后退，左右控制横移 |
+| ⑤ 右摇杆 | 左右拨动控制转向 |
+| ③ Select（双方框） | 先扶稳鸭子，再长按约 2 秒请求关机。等系统关机后再拔电池 |
+| 十字键 ↑ 长按约 3 秒 | 切换行走与滚轮模式。普通步行时留在行走模式 |
+
+### r2 镜像安装配对服务 {#gamepad-r2}
 
 **已刷 `-r2` 的用户可以保留现有系统。** `-r2` 已有蓝牙驱动和兼容设置，需要先在鸭子上安装一次配对服务，再用最新版工作台操作。
 
@@ -244,10 +277,7 @@ duck-model hd1910
    sudo systemctl enable --now duck-gamepad-pair.service
    ```
 
-2. 在电脑上更新 DuckBuddy 仓库，按[第四步](#step4)重新打开工作台。把手柄切到 Xbox 模式并让灯快闪，再在「总览」点「配对新手柄」，等待页面显示结果。服务刚启动时可能已经在扫描，此时按钮会显示本轮配对结果。
-3. 配对后，鸭子下次开机时按手柄的 Home 键回连。手柄控制功能按[第八步](#step8)完成标定后启用。
-
-**已刷 r3 或更新版的用户**可以在首次开机的约 90 秒扫描窗口内直接让手柄快闪。换手柄或错过窗口时，使用工作台「配对新手柄」。自动配对和重启回连仍待实机验证。
+2. 在电脑上更新 DuckBuddy 仓库，按[第四步](#step4)重新打开工作台，再按[BSP-G6 配对步骤](#gamepad-bsp-g6)操作。服务刚启动时可能已经在扫描，此时按钮会显示本轮配对结果。
 
 ### 用终端手动配对
 
@@ -273,14 +303,6 @@ exit
 ```
 
 之后按手柄的 Home 键，它会自动连上鸭子。以后每次开机，也是按 Home 键回连。
-
-| 按键 | 作用 |
-|---|---|
-| Start | 切换行走控制的启用状态。首次按下可能上力并站起，**按之前先托稳** |
-| 左摇杆 | 前后左右走（最快 0.2 m/s） |
-| 右摇杆 | 原地转向 |
-| Select 按住 2 秒 | 关机 |
-| 十字键上 按住 3 秒 | 切到翻滚模式，**不要按** |
 
 **给它起名字。** 名字和性格写在鸭子上的 `~/.config/duck/persona.json` 里，只需要写和例子不一样的部分（完整的例子在 `~/persona/example.json`）。用 `nano ~/.config/duck/persona.json` 新建这个文件，比如：
 
@@ -338,7 +360,8 @@ exit
 | 叫名字没反应 | 语音识别把名字听成了别的字 | 看 voiced 日志，把听错的词加进 `name_aliases` |
 | 走着走着不听摇杆了 | 头部舵机到了 70 °C，在休息 | 等它凉到 45 °C 以下自己恢复 |
 | 电池一接上就报电压不对 | 电池节数和舵机不配（HL-2915 要 3S、HD-1910 要 2S），2S 充到了 8.4 V 以上，或者电量太低 | 换节数对、充满的电池；HD-1910 版确认运行过 `duck-model hd1910` |
-| 手柄连不上 | 没切到 Xbox 模式，或配对时没选 `transport bredr` | 在 bluetoothctl 里 `remove 手柄地址`，重做配对 |
+| 手柄连不上 | 手柄还没进 Xbox 配对模式，或在回连另一台设备 | BSP-G6 拨到 X 档，长按 Home 到灯快闪，再用工作台配对。用终端配对时选 `transport bredr` |
+| 手柄灯常亮，摇杆推了不走 | 行走控制尚未启用，或手柄服务没启动 | 在工作台「总览」确认手柄服务运行，托稳鸭子再短按 Start（≡） |
 | 摄像头测试报“被占用” | visiond 在用摄像头 | `systemctl --user stop visiond-dev` 后再测 |
 
 ## 附录：常用命令 {#commands}
