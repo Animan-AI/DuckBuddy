@@ -4,7 +4,7 @@
 
 **刚拿到零件或一张空卡？** 从 [组装说明](https://animan-ai.github.io/DuckBuddy/assembly.html) 和 [烧录、接线与标定](https://animan-ai.github.io/DuckBuddy/tutorial.html#prepare) 开始。已经刷好了卡，但关节还没标定的，先完成标定再试走路。
 
-首次配网没有摄像头，可以试用 [r10 热点配网预览镜像](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r10)。[r8 系统镜像](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8)仍可下载。已经能正常使用的鸭子，可以按现有系统直接练习。
+第一次烧卡可以下载 [r14 预览镜像](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r14)。默认机型是 HD-1910（2S），HL-2915（3S）请先按[机型设置说明](https://animan-ai.github.io/DuckBuddy/tutorial.html#select-model)切换。已经能正常使用的鸭子，可以按现有系统直接练习。
 
 [开机](#power-on) · [充电](#charge) · [日常使用](#daily-use) · [让 AI Agent 做第一个小功能](#ai-development)
 
@@ -14,7 +14,7 @@
 
 1. **先看机型和电池标签。** HL-2915 用 **3S LiPo 或 3S LiHV**，HD-1910 用普通 **2S LiPo**。`2S`、`3S` 是串联的电芯节数，代表不同电压。请同时确认舵机、扩展板和电池是配套的。拿不准时，找卖家确认机型再接电池。
 2. **在平地上接电。** 刚装好或换过板子，先按接线图核对 PDB 和 HAT 之间的三根线。再扶住躯干或把鸭子放稳，把电池插入机身的电池接口。插电后主控会开机。新刷的卡第一次启动要等几分钟。听到提示或看到主控启动后再继续。 [PDB 与 HAT 接线图](https://animan-ai.github.io/DuckBuddy/assembly.html#pdb-hat-wiring)
-3. **让手机和鸭子连同一个 Wi‑Fi。** 已经连过这个网络，可以问「豆豆，你的 IP 是多少」。第一次连网时，r10 用户可用[手机连接鸭子的配网热点](https://animan-ai.github.io/DuckBuddy/tutorial.html#hotspot-r10)。使用二维码时，在手机 Wi‑Fi 设置里找当前 **2.4 GHz Wi‑Fi** 的分享二维码，再说「豆豆，扫码」，把二维码举到摄像头前约 20–30 厘米。连上后记下它播报的 IP。需要用键盘时，按[首次连网步骤](https://animan-ai.github.io/DuckBuddy/tutorial.html#step2)手动连接。
+3. **让手机和鸭子连同一个 Wi‑Fi。** 已经连过这个网络，可以问「豆豆，你的 IP 是多少」。第一次连网时，r14 用户可用[手机连接鸭子的配网热点](https://animan-ai.github.io/DuckBuddy/tutorial.html#hotspot-r10)。使用二维码时，在手机 Wi‑Fi 设置里找当前 **2.4 GHz Wi‑Fi** 的分享二维码，再说「豆豆，扫码」，把二维码举到摄像头前约 20–30 厘米。连上后记下它播报的 IP。需要用键盘时，按[首次连网步骤](https://animan-ai.github.io/DuckBuddy/tutorial.html#step2)手动连接。
 4. **在手机浏览器打开页面。** 地址栏输入 `http://鸭子的IP:8088/`，例如鸭子报 `192.168.1.50` 时，输入 `http://192.168.1.50:8088/`。IP 就是这只鸭子在当前网络里的地址，换网络后可能变。有时浏览器会自动改成 HTTPS，把开头改回 `http://` 再试。
 
 看到网页上的鸭子名字和状态，就可以试着打个招呼。已经改过名字的，把下面的「豆豆」换成你起的名字。
