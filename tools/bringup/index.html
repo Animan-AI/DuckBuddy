@@ -143,18 +143,23 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; backgro
       <button id="ov-pair">配对新手柄</button>
         <button id="ov-reconnect">重连代理</button></div>
       <details id="ov-ssh" class="guide">
-        <summary>首次连接 SSH / 连不上怎么办</summary>
+        <summary>SSH 免密登录 / 重新刷机</summary>
         <p id="ov-ssh-status" class="muted" role="status"></p>
+        <p>这些命令在电脑的 PowerShell 运行。先核对命令里的地址和鸭子开机播报的 IP。如果 IP 变了，用新的 <code>--host</code> 地址重新启动工作台。</p>
         <ol>
-          <li>在电脑的 PowerShell 手动登录。第一次看到主机密钥提示时，确认地址是这台鸭子，再输入 <code>yes</code>。镜像初始密码是 <code>orangepi</code>，改过密码就用新密码。登录后输入 <code>exit</code> 回到电脑。</li>
+          <li><b>重刷后清除这台鸭子的旧记录。</b> 确认地址属于刚重刷的鸭子，再执行下面的命令。提示找不到旧记录时可以继续。首次连接可直接做下一步。
+            <pre><code id="ov-ssh-remove"></code></pre>
+          </li>
+          <li><b>手动登录一次。</b> 核对地址后，看到新主机确认提示就输入 <code>yes</code>。用鸭子当前的密码登录，DuckBuddy 镜像初始密码是 <code>orangepi</code>。输入 <code>exit</code> 回到电脑。
+            <pre><code id="ov-ssh-login"></code></pre>
+          </li>
+          <li><b>把电脑的公钥装进新系统。</b> 已有 <code>id_ed25519.pub</code> 可以直接用。没有就运行 <code>ssh-keygen -t ed25519</code>，使用默认保存位置。执行下方命令时再输一次鸭子的登录密码。
+            <pre><code id="ov-ssh-install"></code></pre>
+          </li>
+          <li><b>验证并重连。</b> 下方命令直接显示主机名（例如 <code>duck-0000</code>），且没有索要密码，就回「总览」点「重连代理」。页头显示鸭子的主机名和地址，表示工作台已经连上。
+            <pre><code id="ov-ssh-check"></code></pre>
+          </li>
         </ol>
-        <pre><code id="ov-ssh-login"></code></pre>
-        <p>重刷后若提示 <code>REMOTE HOST IDENTIFICATION HAS CHANGED</code>，确认地址是刚重刷的鸭子后，在电脑清除该地址的旧记录，再执行上面的登录命令。</p>
-        <pre><code id="ov-ssh-remove"></code></pre>
-        <p>如果电脑还没有 <code>id_ed25519.pub</code>，先运行 <code>ssh-keygen -t ed25519</code>，使用默认保存位置。然后把公钥装到鸭子上。</p>
-        <pre><code id="ov-ssh-install"></code></pre>
-        <p>用下面的命令检查免密登录。能直接显示鸭子的主机名后，回来点「重连代理」。</p>
-        <pre><code id="ov-ssh-check"></code></pre>
       </details>
       <table class="kv" id="ov-robot"></table>
       <h2>整机机型</h2>
@@ -591,7 +596,7 @@ function showSshHelp(error) {
   const dest = quote(host);
   $("ov-ssh-login").textContent = `ssh ${dest}`;
   $("ov-ssh-remove").textContent = `ssh-keygen -R ${quote(address)}`;
-  $("ov-ssh-install").textContent = `Get-Content "$env:USERPROFILE\\.ssh\\id_ed25519.pub" | ssh ${dest} 'umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys'`;
+  $("ov-ssh-install").textContent = `Get-Content "$env:USERPROFILE\\.ssh\\id_ed25519.pub" | ssh ${dest} 'umask 077; mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && sync'`;
   $("ov-ssh-check").textContent = `ssh -o BatchMode=yes ${dest} hostname`;
   const status = $("ov-ssh-status");
   if (!error) {
@@ -600,11 +605,11 @@ function showSshHelp(error) {
   }
   $("ov-ssh").open = true;
   if (/REMOTE HOST IDENTIFICATION HAS CHANGED/i.test(error)) {
-    status.textContent = "SSH 主机密钥变了。核对地址后，按下面的重刷处理步骤操作。";
+    status.textContent = "SSH 主机密钥变了。如果这台鸭子刚刷过机，先核对地址，再从第 1 步清除旧记录。";
   } else if (/Host key verification failed/i.test(error)) {
-    status.textContent = "工作台未能确认 SSH 主机密钥。先在 PowerShell 手动登录一次。";
+    status.textContent = "工作台未能确认 SSH 主机密钥。首次连接从第 2 步手动登录。刚刷过机则先做第 1 步。";
   } else if (/Permission denied/i.test(error)) {
-    status.textContent = "SSH 登录被拒绝。请确认账户，并安装这台电脑的公钥。";
+    status.textContent = "SSH 登录被拒绝。先确认第 2 步能用密码登录，再执行第 3 步安装电脑的公钥。";
   } else {
     status.textContent = "先用下面的 SSH 命令确认地址和具体报错。连接超时时，核对鸭子的 IP 和网络。";
   }

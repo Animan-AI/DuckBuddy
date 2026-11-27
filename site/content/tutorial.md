@@ -93,41 +93,44 @@ duck-model hd1910
 
 拿到 IP 后，按上面的「第一次登录并改密码」登录，再做[工作台免密登录](#step3)。这是预览功能，镜像和配网流程已通过离线校验，实机冷启动仍待验证。
 
-## 第三步：首次 SSH 登录与免密连接 {#step3}
+## 第三步：首次或重刷后配置 SSH 免密登录 {#step3}
 
-让电脑和鸭子接入同一个局域网。下面先在 PowerShell 手动登录一次，再安装电脑的公钥。新版工作台也能在 **「总览 → 首次连接 SSH / 连不上怎么办」** 展开这些命令，命令里的地址会用你启动工作台时指定的地址。
+让电脑和鸭子接入同一个局域网。在 Windows PowerShell 里完成下面几步。重刷后，电脑原来的 SSH 密钥可以继续用，需要在新系统里重新安装公钥。工作台「总览 → SSH 免密登录 / 重新刷机」也会按当前地址显示命令。
 
-1. **用地址手动登录。** 把示例 IP 换成鸭子实际的 IP。主机名 `duck-XXXX.local` 能用时也可以填主机名。同一轮始终用同一个地址。
+1. **填入鸭子现在的地址。** 用开机播报的实际 IP 替换示例里的 `192.168.1.50`，下面几条命令都在同一个 PowerShell 窗口执行。
 
     ```powershell
     $DuckHost = '192.168.1.50'
     $Duck = "orangepi@$DuckHost"
+    ```
+
+2. **重刷时清除旧主机记录。** 电脑会记住上一次连接的主机密钥。重新刷卡后，即使 IP 一样，也可能提示 `REMOTE HOST IDENTIFICATION HAS CHANGED`。确认地址属于刚重刷的鸭子，再执行下面的命令。提示没有旧记录可以继续。首次连接可直接做下一步。
+
+    ```powershell
+    ssh-keygen -R $DuckHost
+    ```
+
+3. **手动登录，确认新主机。** 看到 `Are you sure you want to continue connecting` 时，核对地址再输入 `yes`。DuckBuddy 镜像的初始密码是 `orangepi`，改过就用新密码。输入密码时屏幕不会显示字符。登录后可用 `passwd` 修改初始密码，再输入 `exit` 回到电脑。
+
+    ```powershell
     ssh $Duck
     ```
 
-    首次提示 `Are you sure you want to continue connecting`，确认是这台鸭子再输入 `yes`。镜像初始密码是 `orangepi`，输入密码时屏幕不会显示字符。第一次登录后运行 `passwd` 修改初始密码，再输入 `exit` 回电脑。
-
-    重刷后提示 `REMOTE HOST IDENTIFICATION HAS CHANGED` 时，先确认地址确实属于刚重刷的鸭子，再在电脑运行 `ssh-keygen -R $DuckHost`，重新执行 `ssh $Duck` 并确认新的主机密钥。提示 `Host key verification failed` 时，也先完成一次手动登录。
-
-2. **准备电脑的公钥。** 已有 `%USERPROFILE%\.ssh\id_ed25519.pub` 就直接用。电脑上还没有密钥对时，在 PowerShell 运行下面的命令，使用默认保存位置。
+4. **重新安装电脑的公钥。** 如果已经有 `id_ed25519.pub`，可以直接用。没有这个文件时，在电脑运行 `ssh-keygen -t ed25519`，使用默认保存位置。再执行下面的命令，按提示输入鸭子当前的登录密码。
 
     ```powershell
-    ssh-keygen -t ed25519
+    Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" | ssh $Duck 'umask 077; mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && sync'
     ```
 
-3. **安装公钥。** 在同一个 PowerShell 窗口运行，用鸭子当前的登录密码完成安装。
-
-    ```powershell
-    Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" | ssh $Duck 'umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys'
-    ```
-
-4. **验证工作台能连。** 在电脑运行：
+5. **先确认免密登录，再确认工作台。** 在电脑执行：
 
     ```powershell
     ssh -o BatchMode=yes $Duck hostname
     ```
 
-    能直接显示主机名，就用同一地址打开工作台，或回「总览」点 **重连代理**。如果手动登录成功、这条免密命令却报 `Permission denied (publickey)`，核对公钥是否装到了这台鸭子的 `orangepi` 账户。如果手动 SSH 就超时或被断开，先查 IP、局域网和鸭子的 SSH 服务。
+    能直接显示主机名（例如 `duck-0000`），且没有索要密码，就说明免密登录成功。回到工作台「总览」点 **重连代理**，页头显示鸭子的主机名和地址即为连上。刷机后 IP 变了，按[第四步](#step4)用新地址重新启动工作台。
+
+    手动登录成功，但免密命令报 `Permission denied`，回第 4 步检查公钥有没有装到这台鸭子的 `orangepi` 账户。提示 `Host key verification failed` 时回第 2、3 步核对主机记录。手动登录也超时，就先确认 IP 和局域网连接。
 
 ## 第四步：打开 DuckBuddy 工作台 {#step4}
 
@@ -394,7 +397,7 @@ exit
 |---|---|---|
 | 插卡后 Windows 要求格式化 | 卡里是 Linux 分区 | 点取消，不影响使用 |
 | `ping duck-XXXX.local` 不通 | 网络不支持这种名字，或鸭子没连上 WiFi | 去路由器设备列表找 IP；找不到就接显示器，用 `nmtui` 重连 |
-| 工作台报连不上机器人 | SSH 主机密钥、免密登录或地址有问题 | 展开「总览 → 首次连接 SSH / 连不上怎么办」，按[第三步](#step3)先测试手动登录，再验证免密连接 |
+| 工作台报连不上机器人 | SSH 主机密钥、免密登录或地址有问题 | 展开「总览 → SSH 免密登录 / 重新刷机」，按[第三步](#step3)核对旧主机记录、重装公钥并验证免密连接 |
 | 舵机页拒绝操作 | robotd 占着总线 | 在「总览」里停掉 robotd；服务已经打开的用 `duck-services off` |
 | 开始标定后一直没有实机读数 | robotd 没有读到总线 | 到「总览」看 robotd 状态，核对舵机应答和关节映射 |
 | 滑杆调过，重开却变回原样 | 微调还在草稿里，或换了配置 | 按「卸力并应用微调」→「保存零位」，等成功提示再关闭。写完映射或手动改配置后重开工作台 |
