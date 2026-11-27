@@ -86,7 +86,7 @@ def load(path: str | None = None) -> Persona:
             raise ValueError(f"{chosen}: unknown persona keys {unknown}")
         d.update(own)
     d = {k: v for k, v in d.items() if not k.startswith("_")}
-    d = {k: _text(v) for k, v in d.items()}
+    d = {k: v if k == "name_aliases" else _text(v) for k, v in d.items()}
     d["name_aliases"] = tuple(d.get("name_aliases") or ())
     d["source"] = chosen
     return Persona(**d)

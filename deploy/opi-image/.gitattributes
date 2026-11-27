@@ -1,1 +1,7 @@
 build-r8-from-r7.sh text eol=lf
+r14/build-r14.sh text eol=lf
+r14/duck-model text eol=lf
+r14/console/* text eol=lf
+r14/hotspot/*.py text eol=lf
+r14/hotspot/*.service text eol=lf
+r14/*.toml text eol=lf

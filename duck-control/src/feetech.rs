@@ -22,7 +22,7 @@
 //!   1..15 down the harness on this robot, not 10–34 by limb as the original was.
 
 use std::f64::consts::PI;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use rustypot::servo::feetech::sts3215::Sts3215Controller;
 
@@ -94,8 +94,9 @@ const MAX_POSITION: i32 = 4095;
 /// Coarse: one count is ~4.4°/s, about three times the XL330's 0.229 rpm.
 const RAD_PER_SEC_PER_COUNT: f64 = 0.732 * 2.0 * PI / 60.0;
 
-/// Present current, mA per count.
-const MA_PER_COUNT: f64 = 6.5;
+/// Goal and present current (44, 69), mA per count, on the HL-2915. Not a property of the HLS
+/// memory map: the HD-1910's counts are a tenth of this (see [`FeetechConfig::current_ma_per_count`]).
+pub const HL2915_MA_PER_COUNT: f64 = 6.5;
 
 /// Present voltage, volts per count.
 const VOLTS_PER_COUNT: f64 = 0.1;
@@ -138,6 +139,10 @@ pub struct FeetechConfig {
     pub imu: bool,
     /// Current each servo may draw, mA. Written to [`GOAL_CURRENT`] at bring-up.
     pub current_limit_ma: f64,
+    /// mA per count of the goal and present current registers: [`HL2915_MA_PER_COUNT`] on the
+    /// HL-2915, about 0.65 on the HD-1910 (2026-10-26 bench: capped at 200 counts it held only
+    /// 0.10 N·m — "1300 mA" was ~130 mA).
+    pub current_ma_per_count: f64,
     /// Joints left out of every torque-enable and goal write, so their servo stays limp while
     /// the rest hold. Both have to skip it: an HLS switches its own torque on at a goal write.
     /// (A goal current of 0 does not do it — measured 2026-10-12, the mouth went rigid at its
@@ -154,6 +159,10 @@ pub struct FeetechConfig {
     pub position_kp: [u8; NUM_JOINTS],
     /// Live Kd (register 51), written once at bring-up.
     pub position_kd: u8,
+    /// Use the HD-1910 goal block and feedback timing shipped with kissqy V313.
+    pub hd1910_kissqy_profile: bool,
+    /// Keep Xiaohei's nonzero current and speed when a V313 zero goal stalls.
+    pub hd1910_kissqy_use_local_goal: bool,
 }
 
 impl FeetechConfig {
@@ -184,18 +193,42 @@ impl FeetechConfig {
                 self.position_kp, self.position_kd
             ));
         }
-        if !(self.current_limit_ma > 0.0 && self.current_limit_ma <= 2047.0 * MA_PER_COUNT) {
+        if !(self.current_ma_per_count > 0.0 && self.current_ma_per_count <= 100.0) {
             return Err(format!(
-                "current limit {} mA outside 0..{} mA",
-                self.current_limit_ma,
-                2047.0 * MA_PER_COUNT
+                "current_ma_per_count {} outside 0..100",
+                self.current_ma_per_count
+            ));
+        }
+        let max_ma = 2047.0 * self.current_ma_per_count;
+        if !(self.current_limit_ma > 0.0 && self.current_limit_ma <= max_ma) {
+            return Err(format!(
+                "current limit {} mA outside 0..{max_ma} mA",
+                self.current_limit_ma
             ));
         }
         Ok(())
     }
 
+    /// Six bytes for a write at [`GOAL_POSITION`]: the goal, then [`GOAL_CURRENT`] and
+    /// [`GOAL_SPEED`] — the values bring-up writes, sent again with every goal. An HD-1910
+    /// sometimes takes a goal and never moves to it, torque on and its registers all correct,
+    /// until 46 is written again (Xiaohei, 2026-10-28 and on a new PDB 2026-10-30: in a home ramp
+    /// 3–9 of 14 servos stayed put at ~0 mA; rewriting the goal, the torque or Kp did nothing,
+    /// rewriting 46 with the same 250 moved them at once). The community HD-1910 port writes
+    /// [pos, 44, 46] every tick the same way.
+    fn goal_block(&self, counts: u16) -> Vec<u8> {
+        let mut b = counts.to_le_bytes().to_vec();
+        if self.hd1910_kissqy_profile && !self.hd1910_kissqy_use_local_goal {
+            b.extend_from_slice(&[0; 4]);
+        } else {
+            b.extend_from_slice(&self.current_limit_counts().to_le_bytes());
+            b.extend_from_slice(&RUNNING_SPEED.to_le_bytes());
+        }
+        b
+    }
+
     fn current_limit_counts(&self) -> u16 {
-        (self.current_limit_ma / MA_PER_COUNT)
+        (self.current_limit_ma / self.current_ma_per_count)
             .round()
             .clamp(1.0, 2047.0) as u16
     }
@@ -250,13 +283,13 @@ struct ServoSample {
     status: u8,
 }
 
-fn decode_block(block: &[u8], sign: i8, offset: i16) -> ServoSample {
+fn decode_block(block: &[u8], sign: i8, offset: i16, ma_per_count: f64) -> ServoSample {
     ServoSample {
         position: counts_to_rad(le16(block, OFF_POSITION), sign, offset),
         velocity: sign as f64
             * sign_magnitude(le16(block, OFF_SPEED)) as f64
             * RAD_PER_SEC_PER_COUNT,
-        current_ma: (sign_magnitude(le16(block, OFF_CURRENT)) as f64 * MA_PER_COUNT).abs(),
+        current_ma: (sign_magnitude(le16(block, OFF_CURRENT)) as f64 * ma_per_count).abs(),
         volts: block[OFF_VOLTAGE] as f64 * VOLTS_PER_COUNT,
         temp_c: block[OFF_TEMPERATURE] as f64,
         status: block[OFF_STATUS],
@@ -282,6 +315,7 @@ pub struct FeetechIo {
     /// Voltage and temperatures from the last tick, which is where [`RobotIo::slow_sensors`]
     /// gets them — they arrive in the tick's block for free.
     last_slow: Option<SlowSensors>,
+    previous_velocity: Option<(Instant, [f64; NUM_JOINTS])>,
     /// Last status byte per joint, so a fault is logged when it appears rather than every tick.
     last_status: [u8; NUM_JOINTS],
     /// Whether torque was last switched on. **An HLS turns its own torque on when it receives
@@ -325,6 +359,7 @@ impl FeetechIo {
             imu,
             stale_imu: StaleImuTracker::default(),
             last_slow: None,
+            previous_velocity: None,
             last_status: [0; NUM_JOINTS],
             torque_on: false,
             limp,
@@ -390,9 +425,16 @@ impl FeetechIo {
                      (want 0/{MAX_POSITION}) — reconfigure it with tools/servo"
                 )));
             }
-            self.write(id, GOAL_CURRENT, limit.to_le_bytes().to_vec())?;
-            self.write(id, GOAL_SPEED, RUNNING_SPEED.to_le_bytes().to_vec())?;
-            self.write(id, ACCELERATION, vec![RUNNING_ACCELERATION])?;
+            if self.config.hd1910_kissqy_profile {
+                self.write(id, 48, 1000u16.to_le_bytes().to_vec())?;
+            }
+            if !self.config.hd1910_kissqy_profile || self.config.hd1910_kissqy_use_local_goal {
+                self.write(id, GOAL_CURRENT, limit.to_le_bytes().to_vec())?;
+                self.write(id, GOAL_SPEED, RUNNING_SPEED.to_le_bytes().to_vec())?;
+            }
+            if !self.config.hd1910_kissqy_profile {
+                self.write(id, ACCELERATION, vec![RUNNING_ACCELERATION])?;
+            }
             // The control loop sets Kp on its first tick; this covers `robotd init` and the
             // window before, which would otherwise run on the servo's factory 32.
             self.write(id, KP, vec![self.config.position_kp[joint]])?;
@@ -453,7 +495,8 @@ impl FeetechIo {
                     self.write(id, TORQUE_ENABLE, vec![0])?;
                 } else {
                     let present = self.read_u16(id, PRESENT_POSITION)?;
-                    self.write(id, GOAL_POSITION, present.to_le_bytes().to_vec())?;
+                    let block = self.config.goal_block(present);
+                    self.write(id, GOAL_POSITION, block)?;
                     self.write(id, TORQUE_ENABLE, vec![1])?;
                 }
             }
@@ -481,7 +524,13 @@ impl FeetechIo {
                 });
             }
             let (ids, joints) = self.driven();
-            let blocks: Vec<Vec<u8>> = joints.iter().map(|&j| blocks[j].clone()).collect();
+            let blocks: Vec<Vec<u8>> = joints
+                .iter()
+                .map(|&j| {
+                    self.config
+                        .goal_block(u16::from_le_bytes([blocks[j][0], blocks[j][1]]))
+                })
+                .collect();
             // Every joint limp (a rest with the head down too) leaves nothing to write, and a
             // sync_write to no servos divides by zero inside rustypot — 2026-10-13, it took the
             // control thread down.
@@ -603,7 +652,12 @@ impl RobotIo for FeetechIo {
                     got: block.len(),
                 });
             }
-            let s = decode_block(block, self.config.signs[joint], self.config.offsets[joint]);
+            let s = decode_block(
+                block,
+                self.config.signs[joint],
+                self.config.offsets[joint],
+                self.config.current_ma_per_count,
+            );
             sensors.positions[joint] = s.position;
             sensors.velocities[joint] = s.velocity;
             sensors.currents_ma[joint] = s.current_ma;
@@ -624,6 +678,14 @@ impl RobotIo for FeetechIo {
                 temps_c,
             });
         }
+        if self.config.hd1910_kissqy_profile {
+            let now = Instant::now();
+            if let Some((at, previous)) = self.previous_velocity.replace((now, sensors.velocities))
+                && now.duration_since(at) <= Duration::from_millis(100)
+            {
+                sensors.velocities = previous;
+            }
+        }
         Ok(sensors)
     }
 
@@ -640,13 +702,11 @@ impl RobotIo for FeetechIo {
         let data: Vec<Vec<u8>> = joints
             .iter()
             .map(|&j| {
-                rad_to_counts(
+                self.config.goal_block(rad_to_counts(
                     targets.positions[j],
                     self.config.signs[j],
                     self.config.offsets[j],
-                )
-                .to_le_bytes()
-                .to_vec()
+                ))
             })
             .collect();
         self.controller
@@ -731,11 +791,14 @@ mod tests {
             offsets: [0; NUM_JOINTS],
             imu: true,
             current_limit_ma: 2925.0,
+            current_ma_per_count: HL2915_MA_PER_COUNT,
             limp: [false; NUM_JOINTS],
             imu_mount: SflpDecoder::DEFAULT_MOUNT,
             imu_median: true,
             position_kp: [8; NUM_JOINTS],
             position_kd: 8,
+            hd1910_kissqy_profile: false,
+            hd1910_kissqy_use_local_goal: false,
         }
     }
 
@@ -834,7 +897,7 @@ mod tests {
         block[7] = 35; // °C
         block[9] = 0x20; // overload
         block[13..15].copy_from_slice(&(0x8000u16 | 100).to_le_bytes()); // −650 mA
-        let s = decode_block(&block, 1, 0);
+        let s = decode_block(&block, 1, 0, HL2915_MA_PER_COUNT);
         assert!((s.position - PI / 2.0).abs() < 1e-12);
         assert!((s.velocity + 73.2 * 2.0 * PI / 60.0).abs() < 1e-9);
         assert!((s.volts - 11.2).abs() < 1e-12);
@@ -857,7 +920,7 @@ mod tests {
         let mut block = [0u8; READ_LEN as usize];
         block[0..2].copy_from_slice(&2048u16.to_le_bytes());
         block[2..4].copy_from_slice(&1024u16.to_le_bytes());
-        assert!(decode_block(&block, -1, 0).velocity < 0.0);
+        assert!(decode_block(&block, -1, 0, HL2915_MA_PER_COUNT).velocity < 0.0);
     }
 
     /// The block has to reach the current register at 69..70 and hold the whole IMU block.
@@ -893,5 +956,31 @@ mod tests {
     #[test]
     fn current_limit_converts_to_counts() {
         assert_eq!(config().current_limit_counts(), 450);
+    }
+
+    /// Every goal carries 44 and 46 with it: [pos, current limit, running speed], little-endian.
+    #[test]
+    fn a_goal_block_carries_current_and_speed() {
+        let mut c = config();
+        c.current_ma_per_count = 0.65;
+        c.current_limit_ma = 1300.0;
+        assert_eq!(c.goal_block(2048), vec![0x00, 0x08, 0xD0, 0x07, 250, 0]);
+        c.hd1910_kissqy_profile = true;
+        assert_eq!(c.goal_block(2048), vec![0x00, 0x08, 0, 0, 0, 0]);
+        c.hd1910_kissqy_use_local_goal = true;
+        assert_eq!(c.goal_block(2048), vec![0x00, 0x08, 0xD0, 0x07, 250, 0]);
+    }
+
+    /// The HD-1910: the same 1300 mA is ten times the counts, and the present current too.
+    #[test]
+    fn hd1910_current_counts_are_a_tenth() {
+        let mut c = config();
+        c.current_ma_per_count = 0.65;
+        c.current_limit_ma = 1300.0;
+        assert_eq!(c.validate(), Ok(()));
+        assert_eq!(c.current_limit_counts(), 2000);
+        let mut block = vec![0u8; READ_LEN as usize];
+        block[OFF_CURRENT..OFF_CURRENT + 2].copy_from_slice(&200u16.to_le_bytes());
+        assert!((decode_block(&block, 1, 0, 0.65).current_ma - 130.0).abs() < 1e-9);
     }
 }

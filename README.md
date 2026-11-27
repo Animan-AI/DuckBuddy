@@ -13,7 +13,7 @@
 <img src="https://img.shields.io/badge/servos-Feetech%20HL--2915-green" alt="Feetech HL-2915">
 </p>
 
-<p align="center">🌐 <a href="https://animan-ai.github.io/DuckBuddy/"><b>项目主页</b></a> · <a href="https://animan-ai.github.io/DuckBuddy/bom.html">物料清单</a> · <a href="https://animan-ai.github.io/DuckBuddy/assembly.html">组装说明</a> · <a href="https://animan-ai.github.io/DuckBuddy/tutorial.html">新手教程</a> · <a href="docs/robot/GETTING-STARTED-CN.md">开机、充电与使用</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r10">r10 热点配网预览</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8">r8 系统镜像</a></p>
+<p align="center">🌐 <a href="https://animan-ai.github.io/DuckBuddy/"><b>项目主页</b></a> · <a href="https://animan-ai.github.io/DuckBuddy/bom.html">物料清单</a> · <a href="https://animan-ai.github.io/DuckBuddy/assembly.html">组装说明</a> · <a href="https://animan-ai.github.io/DuckBuddy/tutorial.html">新手教程</a> · <a href="docs/robot/GETTING-STARTED-CN.md">开机、充电与使用</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r14">r14 系统镜像</a> · <a href="https://github.com/Animan-AI/DuckBuddy/tree/main/deploy/opi-image/r14">复现 r14</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8">r8 系统镜像</a></p>
 
 <p align="center">中文 | <a href="README-EN.md">English</a></p>
 

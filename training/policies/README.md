@@ -65,3 +65,13 @@ python training/bam/eval_skills_hl2915.py --head ...   # 超出训练范围的�
 
 v6 部署：低通 0.5 / 0.7（训练已含），`action_scale = 1.0`（先试），再试 0.9；其余同 G 组配置（中值关、校正 3.3°、`walk_settle_s = 2.0`）。
 
+
+## HD-1910（2S）r14
+
+| 动作 | DuckBuddy ONNX | 来源 |
+|---|---|---|
+| 行走 | [8498](hd1910_walk_kissqy_m6_p5_8498.onnx) | LinMid 7499 在陆吾 HD-1910 BAM M6 参数上续训 |
+| 起身／站立 | [9997](hd1910_stand_noise10_9997.onnx) | HD-1910 起身策略，Noise10 训练 |
+| 坐站 | [6998](hd1910_sitstand_kp16_6998.onnx) | HD-1910 坐站训练，Kp16 批次 |
+
+[仿真参数](../bam/params/hd1910/README.md)和[实机 PD、镜像复现步骤](../../deploy/opi-image/r14/README.md)。

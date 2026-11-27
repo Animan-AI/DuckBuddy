@@ -1,0 +1,29 @@
+# ---- appended by `duck-services on`: HD-1910 (2S), KissQY M6 actuator adaptation ----
+[policy]
+walk = "/home/orangepi/robot/policies/hd1910_walk_kissqy_m6_p5_8498.onnx"
+stand = "/home/orangepi/robot/policies/hd1910_stand_noise10_9997.onnx"
+sitstand = "/home/orangepi/robot/policies/hd1910_sitstand_kp16_6998.onnx"
+ground_pick = "none"
+kick_left = "none"
+kick_right = "none"
+roulade = "none"
+head_deadband = 0.0
+action_scale = 1.0
+standing_action_scale = 0.6
+head_lowpass = 0.5
+legs_lowpass = 0.7
+standing_gain_ratio = 1.0
+walk_settle_s = 2.0
+gain = 200
+walk_stands = false
+voltage_adapt = false
+
+[safety]
+limp_fall_hand_back = true
+
+[control]
+hz = 50
+heading_hold_gain = 0.0
+heading_hold_max = 0.6
+heading_hold_tau_s = 0.5
+heading_hold_deadband_deg = 5.0

@@ -62,6 +62,8 @@ const ROULADE_CHAIN_WINDOW: f64 = 0.15;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Tuning {
+    /// These V313 skill networks were exported for unfiltered joint targets.
+    pub kissqy_skill_passthrough: bool,
     /// Scales raw policy output before it becomes a joint offset. The prototype's current
     /// alpha default.
     pub action_scale: f64,
@@ -103,6 +105,7 @@ fn getting_up(recovering: bool, gravity_z: f64) -> bool {
 impl Default for Tuning {
     fn default() -> Self {
         Self {
+            kissqy_skill_passthrough: false,
             action_scale: 0.9,
             standing_action_scale: 1.0,
             standing_gain_ratio: 0.8,
@@ -591,7 +594,12 @@ impl Controller {
             targets[joint] = DEFAULT_POSITION[joint] + scale * offsets[joint];
         }
 
-        if let Some(previous) = self.previous {
+        let passthrough = self.tuning.kissqy_skill_passthrough
+            && matches!(
+                net,
+                Net::Roulade | Net::GroundPick | Net::KickLeft | Net::KickRight
+            );
+        if let Some(previous) = self.previous.filter(|_| !passthrough) {
             if let Some(alpha) = self.tuning.head_lowpass {
                 for joint in HEAD_JOINTS {
                     targets[joint] = alpha * targets[joint] + (1.0 - alpha) * previous[joint];

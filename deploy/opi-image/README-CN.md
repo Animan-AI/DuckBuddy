@@ -1,4 +1,8 @@
-# DuckBuddy r8 系统镜像
+# DuckBuddy 系统镜像
+
+当前可下载 [r14 预览镜像](https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r14)。用于 Orange Pi Zero 3W，默认 HD-1910（2S）。支持热点配网、网页驾驶舱、相机预览和拍照。[r14 配置、模型和复现步骤](r14/README.md)。
+
+## r8 旧版镜像
 
 适用于 Orange Pi Zero 3W，基于 Debian 13 Trixie。支持 HL-2915（3S）和 HD-1910（2S）。r8 已通过文件系统、默认配置和 Key 切换回归检查，整卡启动和两种机型的运动仍待实机验证。
 

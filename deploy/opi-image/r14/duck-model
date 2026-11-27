@@ -1,0 +1,62 @@
+#!/bin/sh
+# Set the model-specific bus parameters, runtime and policy bundle together.
+set -eu
+R=$HOME/robot
+CONF=$R/duck.toml
+MARK='^# ---- appended by `duck-services on`'
+
+if [ "$#" -eq 0 ]; then
+    if grep -q '^current_ma_per_count = 0.65' "$CONF"; then
+        echo '当前机型：HD-1910（2S 电池）'
+    else
+        echo '当前机型：HL-2915（3S 电池）'
+    fi
+    grep -E '^(current_ma_per_count|cells|max_volts|joint_signs|walk|sitstand) ' "$CONF"
+    exit
+fi
+
+case "$1" in
+    hd1910)
+        ma=0.65; cells=2; volts=8.4; kp=8; head=5; kd=0
+        signs='[-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1]'
+        extras='position_kp_neck_pitch = 10\nposition_kp_knees = 10\njoint_kp_overrides = { head_pitch = 8 }\nhd1910_kissqy_profile = true\nhd1910_kissqy_use_local_goal = true'
+        ;;
+    hl2915)
+        ma=6.5; cells=3; volts=14.0; kp=16; head=16; kd=8
+        signs='[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]'
+        extras=''
+        ;;
+    *) echo '用法：duck-model [hl2915 | hd1910]' >&2; exit 2 ;;
+esac
+model=$1
+test -x "$R/robotd-runtime/$model/robotd"
+test -f "$R/walk-$model.toml"
+
+cp -p "$CONF" "$(mktemp "$CONF.bak-$(date +%Y%m%d-%H%M%S)-XXXXXX")"
+sed -i -E \
+    -e '/^(position_kp_neck_pitch|position_kp_knees|joint_kp_overrides|hd1910_kissqy_profile|hd1910_kissqy_use_local_goal)[[:blank:]]*=/d' \
+    -e "s/^current_ma_per_count = .*/current_ma_per_count = $ma/" \
+    -e "s/^cells = .*/cells = [$cells]/" \
+    -e "s/^max_volts = .*/max_volts = $volts/" \
+    -e "s/^position_kp = .*/position_kp = $kp/" \
+    -e "s/^position_kp_head = .*/position_kp_head = $head/" \
+    -e "s/^position_kd = .*/position_kd = $kd/" "$CONF"
+if [ -n "$extras" ]; then
+    sed -i "/^position_kd = /a $extras" "$CONF"
+fi
+if ! grep -qx '# joint_align: zero calibration saved' "$CONF" &&
+   grep -Eq '^joint_offsets[[:blank:]]*=[[:blank:]]*\[([[:blank:]]*0[[:blank:]]*,){14}[[:blank:]]*0[[:blank:]]*\]' "$CONF"; then
+    sed -i -E "s/^joint_signs[[:blank:]]*=.*/joint_signs = $signs/" "$CONF"
+fi
+
+if grep -q "$MARK" "$CONF"; then
+    sed -i "/$MARK/,\$d" "$CONF"
+    cat "$R/walk-$model.toml" >> "$CONF"
+fi
+ln -sfn "walk-$model.toml" "$R/walk.toml"
+ln -sfn "robotd-runtime/$model/robotd" "$R/robotd"
+sync
+echo "已设为 $model（原配置已备份）。"
+if systemctl --user -q is-active robotd-dev 2>/dev/null; then
+    echo 'robotd 仍在使用旧配置，卸力后重启 robotd-dev 生效。'
+fi

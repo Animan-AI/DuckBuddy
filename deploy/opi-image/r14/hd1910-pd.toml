@@ -1,0 +1,16 @@
+# HD-1910 (2S) r14 profile. Values measured on Xiaohei.
+[bus]
+position_kp = 8
+position_kp_head = 5
+position_kp_neck_pitch = 10
+position_kp_knees = 10
+joint_kp_overrides = { head_pitch = 8 }
+position_kd = 0
+hd1910_kissqy_profile = true
+hd1910_kissqy_use_local_goal = true
+current_limit_ma = 1300.0
+current_ma_per_count = 0.65
+
+[battery]
+cells = [2]
+max_volts = 8.4

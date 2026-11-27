@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{NAME}} · DuckBuddy 控制台</title>
+  <link rel="stylesheet" href="/console.css">
+  <script src="/console.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="identity"><span class="mark" aria-hidden="true">D</span><div><b>{{NAME}}</b><small>DuckBuddy</small></div></div>
+    <nav aria-label="后台导航"><a href="#cockpit">驾驶舱</a><a href="#camera">摄像头</a><a href="#models">动作模型</a><a href="/dialog">对话与设置</a></nav>
+  </header>
+  <main>
+    <section class="overview" aria-label="机身状态">
+      <div><span>控制服务</span><strong id="robot-status">连接中</strong></div>
+      <div><span>电池</span><strong id="battery">—</strong></div>
+      <div><span>最高舵机温度</span><strong id="temperature">—</strong></div>
+      <div><span>已加载动作</span><strong id="model-count">—</strong></div>
+    </section>
+    <p id="robot-note" class="status" role="status" hidden></p>
+    <div class="deck">
+      <section id="camera" class="panel camera">
+        <div class="panel-title"><h1>摄像头</h1><span id="camera-status" role="status">预览已关闭</span></div>
+        <div class="viewfinder">
+          <img id="preview" alt="鸭子摄像头的实时画面" hidden>
+          <p id="camera-placeholder">开启预览后显示机头画面</p>
+        </div>
+        <div class="camera-actions"><button id="camera-switch" class="accent">开启预览</button><button id="photo">拍照</button><a id="save-photo" class="button" hidden>下载照片</a></div>
+        <figure id="photo-frame" hidden><img id="photo-image" alt="刚拍摄的照片"><figcaption>刚拍摄的照片</figcaption></figure>
+      </section>
+      <section id="cockpit" class="panel cockpit">
+        <div class="panel-title"><h2>驾驶舱</h2><button id="stop" class="stop">停止移动</button></div>
+        <div class="actions">
+          <button data-action="wake" disabled>唤醒</button><button data-action="stand" disabled>站立</button>
+          <button data-action="sleep" disabled>睡眠</button><button data-action="sit" disabled>坐 / 站</button>
+          <button data-action="pick" disabled>叼取</button><button class="accent" data-action="walk" disabled>启用行走</button>
+        </div>
+        <p id="drive-status" class="control-label">启用行走后按住方向移动，松手停止</p>
+        <div class="pad" role="group" aria-label="行走方向">
+          <button data-direction="turn-left" disabled><b>↶</b>左转 <kbd>Q</kbd></button>
+          <button data-direction="forward" disabled><b>↑</b>前进 <kbd>W</kbd></button>
+          <button data-direction="turn-right" disabled><b>↷</b>右转 <kbd>E</kbd></button>
+          <button data-direction="left" disabled><b>←</b>左移 <kbd>A</kbd></button>
+          <button data-direction="back" disabled><b>↓</b>后退 <kbd>S</kbd></button>
+          <button data-direction="right" disabled><b>→</b>右移 <kbd>D</kbd></button>
+        </div>
+        <div class="control-footer"><p id="command-result" class="status" role="status"></p><button data-action="relax" class="quiet" disabled>全部卸力</button></div>
+      </section>
+    </div>
+    <section id="models" class="panel models">
+      <div class="panel-title"><h2>动作模型</h2></div>
+      <div class="model-table"><table><thead><tr><th scope="col">动作</th><th scope="col">模型文件</th><th scope="col">状态</th></tr></thead>
+      <tbody id="model-list"><tr><td colspan="3">读取中</td></tr></tbody></table></div>
+    </section>
+  </main>
+</body>
+</html>

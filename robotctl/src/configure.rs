@@ -253,6 +253,21 @@ impl Model {
                 input.into()
             }
             Kind::Text | Kind::OptionalPath => input.into(),
+            Kind::IntegerMap => {
+                let value = input
+                    .parse::<toml_edit::Value>()
+                    .map_err(|_| "enter a TOML inline table, e.g. { head_pitch = 8 }")?;
+                let valid = value.as_inline_table().is_some_and(|table| {
+                    table.iter().all(|(_, gain)| {
+                        gain.as_integer()
+                            .is_some_and(|gain| u8::try_from(gain).is_ok())
+                    })
+                });
+                if !valid {
+                    return Err("joint gains must be whole numbers in 0..255".to_owned());
+                }
+                value
+            }
             Kind::IntegerList => {
                 let mut array = toml_edit::Array::new();
                 for word in input.split(',') {

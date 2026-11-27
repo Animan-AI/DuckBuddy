@@ -11,7 +11,7 @@
 <img src="https://img.shields.io/badge/servos-Feetech%20HL--2915-green" alt="Feetech HL-2915">
 </p>
 
-<p align="center">🌐 <a href="https://animan-ai.github.io/DuckBuddy/"><b>Project page</b></a> (in Chinese): <a href="https://animan-ai.github.io/DuckBuddy/bom.html">BOM</a> · <a href="https://animan-ai.github.io/DuckBuddy/assembly.html">assembly</a> · <a href="https://animan-ai.github.io/DuckBuddy/tutorial.html">getting started</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r10">r10 hotspot setup preview</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8">r8 system image</a></p>
+<p align="center">🌐 <a href="https://animan-ai.github.io/DuckBuddy/"><b>Project page</b></a> (in Chinese): <a href="https://animan-ai.github.io/DuckBuddy/bom.html">BOM</a> · <a href="https://animan-ai.github.io/DuckBuddy/assembly.html">assembly</a> · <a href="https://animan-ai.github.io/DuckBuddy/tutorial.html">getting started</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r14">r14 system image</a> · <a href="https://github.com/Animan-AI/DuckBuddy/tree/main/deploy/opi-image/r14">Rebuild r14</a> · <a href="https://github.com/Animan-AI/DuckBuddy/releases/tag/opi-image-r8">r8 system image</a></p>
 
 <p align="center"><a href="README.md">中文</a> | English</p>
 

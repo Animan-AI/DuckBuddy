@@ -29,3 +29,8 @@ License (CC-BY-4.0) unless a file says otherwise.
 
 Models fetched at install time (not in this repository) keep their own licences: SenseVoice and the
 GTCRN denoiser through sherpa-onnx, and any language model used by tools/duckbrain.
+
+training/bam/params/hd1910/1910_m6.json
+    HD-1910 BAM M6 parameter file from Luwu Dynamics, xgoduck_rl
+    (https://github.com/LuwuDynamics/xgoduck_rl), commit 326d77a1122870bdefa2c36403937502c958e69c.
+    Apache License 2.0. See the adjacent LICENSE. BAM is from Rhoban.

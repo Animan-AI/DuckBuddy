@@ -41,6 +41,8 @@ pub enum Kind {
     OptionalPath,
     /// A list of whole numbers, edited as comma-separated text ("4, 5, 9").
     IntegerList,
+    /// An inline table mapping names to whole numbers.
+    IntegerMap,
 }
 
 /// One key of `robotd.toml`.
@@ -134,6 +136,31 @@ pub const REGISTRY: &[Entry] = &[
         "Feetech: live position Kp for neck, head and mouth",
     ),
     entry(
+        "bus.position_kp_neck_pitch",
+        Kind::OptionalInteger,
+        "Feetech: neck pitch Kp override, otherwise use the head Kp",
+    ),
+    entry(
+        "bus.position_kp_knees",
+        Kind::OptionalInteger,
+        "Feetech: both knee gains, otherwise use the leg Kp",
+    ),
+    entry(
+        "bus.joint_kp_overrides",
+        Kind::IntegerMap,
+        "Feetech: per-joint Kp overrides, e.g. { head_pitch = 8 }",
+    ),
+    entry(
+        "bus.hd1910_kissqy_profile",
+        Kind::Bool,
+        "Use the HD-1910 V313 feedback and goal profile",
+    ),
+    entry(
+        "bus.hd1910_kissqy_use_local_goal",
+        Kind::Bool,
+        "HD-1910 V313: use configured goal current and runtime speed",
+    ),
+    entry(
         "bus.position_kd",
         Kind::Integer,
         "Feetech: live position Kd",
@@ -142,6 +169,11 @@ pub const REGISTRY: &[Entry] = &[
         "bus.current_limit_ma",
         Kind::Float,
         "Feetech: current each servo may draw, mA",
+    ),
+    entry(
+        "bus.current_ma_per_count",
+        Kind::Float,
+        "Feetech: current-register scale in mA per count, 6.5 for HL-2915 and 0.65 for HD-1910",
     ),
     entry(
         "bus.mouth_torque",
@@ -706,6 +738,7 @@ mod tests {
                     format!("[{section}]\n{key} = \"probe\"\n")
                 }
                 Kind::IntegerList => format!("[{section}]\n{key} = [1, 2]\n"),
+                Kind::IntegerMap => format!("[{section}]\n{key} = {{ head_pitch = 8 }}\n"),
             };
             let parsed: Result<Params, _> = toml::from_str(&probe);
             assert!(

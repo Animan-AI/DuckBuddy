@@ -984,12 +984,25 @@ pub struct Bus {
     /// Feetech only: the same, for the neck, head and mouth. Stiffer than the legs because the
     /// neck holds the head up: at the legs' 6 it sagged 15° off the home pose.
     pub position_kp_head: u8,
+    /// Override the load-bearing neck joint's running gain on Feetech.
+    pub position_kp_neck_pitch: Option<u8>,
+    /// Override the running gain on both knees on Feetech.
+    pub position_kp_knees: Option<u8>,
+    /// Per-joint Feetech P overrides, keyed by the policy joint names.
+    pub joint_kp_overrides: std::collections::BTreeMap<String, u8>,
     /// Feetech only: the servos' live position Kd (register 51), set at bring-up.
     pub position_kd: u8,
+    /// Opt into the HD-1910 goal and feedback format from kissqy V313.
+    pub hd1910_kissqy_profile: bool,
+    pub hd1910_kissqy_use_local_goal: bool,
     /// Feetech only: the current each servo may draw, mA. Written to the servos at every
     /// startup, since they forget it at every power cycle. The default is the servos' own
     /// power-up value.
     pub current_limit_ma: f64,
+    /// Feetech only: mA per count of the goal / present current registers (44, 69). 6.5 on the
+    /// HL-2915; about 0.65 on the HD-1910, whose counts are a tenth (2026-10-26 bench: at the
+    /// HL-2915's 200 counts it held only 0.10 N·m).
+    pub current_ma_per_count: f64,
     /// Feetech only: whether the mouth servo holds. Off leaves it out of torque-enable and of
     /// every goal write, so it stays limp while the rest hold. For testing the legs while the
     /// mouth runs hot holding its pose (2026-10-12: 37 → 66 °C in ten minutes).
@@ -1096,8 +1109,14 @@ impl Default for Bus {
             imu_median: true,
             position_kp: 8,
             position_kp_head: 16,
+            position_kp_neck_pitch: None,
+            position_kp_knees: None,
+            joint_kp_overrides: Default::default(),
             position_kd: 8,
+            hd1910_kissqy_profile: false,
+            hd1910_kissqy_use_local_goal: false,
             current_limit_ma: 2925.0,
+            current_ma_per_count: 6.5,
             mouth_torque: true,
             mouth_wake: false,
         }

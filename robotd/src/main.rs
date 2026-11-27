@@ -183,8 +183,9 @@ const SEATED_BOOT_RAD: f64 = 0.25;
 /// burst of chirps does not toggle its torque between each.
 const MOUTH_WAKE_HOLD: Duration = Duration::from_millis(300);
 
-/// Leg torque restored after a rest: blend the leg targets from where the legs lie to where
-/// the policy wants them over this long, seconds, so they do not jump.
+/// Leg torque restored after a rest, or a policy taking over afresh: blend the leg and head
+/// targets from where the legs lie (or the held pose) to where the policy wants them over this
+/// long, seconds, so they do not jump.
 const REST_LEG_BLEND_S: f64 = 0.8;
 
 /// A deep rest counts as lying once the legs are within this of [`duck_control::LIE_POSITION`]
@@ -1148,12 +1149,21 @@ fn bus_config(bus: &params::Bus) -> Result<BusConfig, String> {
                     bus.joint_ids.len()
                 )
             })?;
+            let names = &duck_control::model::JOINT_NAMES;
+            for name in bus.joint_kp_overrides.keys() {
+                if !names.contains(&name.as_str()) {
+                    return Err(format!(
+                        "unknown Feetech joint in joint_kp_overrides: {name}"
+                    ));
+                }
+            }
             let config = duck_control::feetech::FeetechConfig {
                 ids,
                 signs: per_joint(&bus.joint_signs, 1, "bus.joint_signs")?,
                 offsets: per_joint(&bus.joint_offsets, 0, "bus.joint_offsets")?,
                 imu: bus.imu,
                 current_limit_ma: bus.current_limit_ma,
+                current_ma_per_count: bus.current_ma_per_count,
                 // Mouth: JOINT_NAMES 9.
                 // A mouth that wakes to speak is the control loop's to let go (`mouth_asleep`).
                 limp: std::array::from_fn(|j| j == 9 && !bus.mouth_torque && !bus.mouth_wake),
@@ -1167,13 +1177,21 @@ fn bus_config(bus: &params::Bus) -> Result<BusConfig, String> {
                 imu_median: bus.imu_median,
                 // Neck, head pitch/yaw/roll and mouth: JOINT_NAMES 5..=9.
                 position_kp: std::array::from_fn(|j| {
-                    if (5..=9).contains(&j) {
+                    if let Some(&gain) = bus.joint_kp_overrides.get(names[j]) {
+                        gain
+                    } else if j == 5 {
+                        bus.position_kp_neck_pitch.unwrap_or(bus.position_kp_head)
+                    } else if matches!(j, 3 | 13) {
+                        bus.position_kp_knees.unwrap_or(bus.position_kp)
+                    } else if (6..=9).contains(&j) {
                         bus.position_kp_head
                     } else {
                         bus.position_kp
                     }
                 }),
                 position_kd: bus.position_kd,
+                hd1910_kissqy_profile: bus.hd1910_kissqy_profile,
+                hd1910_kissqy_use_local_goal: bus.hd1910_kissqy_use_local_goal,
             };
             config.validate()?;
             Ok(BusConfig::Feetech(config))
@@ -1339,6 +1357,7 @@ async fn adopt_startup_pose<T: RobotIo>(
 fn build_controller(
     policy_cfg: &params::ResolvedPolicy,
     limp_fall: bool,
+    kissqy_skill_passthrough: bool,
     state: &RobotState,
 ) -> Option<Controller> {
     if !policy_cfg.enabled {
@@ -1347,6 +1366,7 @@ fn build_controller(
     }
     {
         let tuning = Tuning {
+            kissqy_skill_passthrough,
             action_scale: policy_cfg.action_scale,
             standing_action_scale: policy_cfg.standing_action_scale,
             standing_gain_ratio: policy_cfg.standing_gain_ratio,
@@ -1454,7 +1474,12 @@ async fn control_loop<T: RobotIo>(
     }
 
     // Loaded once here and again on a mode switch — see `build_controller`.
-    let mut controller = build_controller(&policy_cfg, params.safety.limp_fall, &state);
+    let mut controller = build_controller(
+        &policy_cfg,
+        params.safety.limp_fall,
+        params.bus.hd1910_kissqy_profile,
+        &state,
+    );
 
     tracing::warn!(
         joints = NUM_JOINTS,
@@ -2513,7 +2538,12 @@ async fn control_loop<T: RobotIo>(
                 policy_params.mode = target;
                 let cfg = policy_params.resolved();
                 state.policy_error.store(None);
-                controller = build_controller(&cfg, params.safety.limp_fall, &state);
+                controller = build_controller(
+                    &cfg,
+                    params.safety.limp_fall,
+                    params.bus.hd1910_kissqy_profile,
+                    &state,
+                );
                 // Published together with the mode, and only after the load: a client that reads
                 // `robot.mode` and gets the new one must not then be told the old mode's networks.
                 state.policies.store(Arc::new(PolicyNames::of(&cfg)));
@@ -2572,6 +2602,13 @@ async fn control_loop<T: RobotIo>(
                 && let Some(controller) = controller.as_mut()
             {
                 controller.reset();
+                // And blend in from the pose it was holding, as after a rest: a policy started
+                // from a zeroed action throws its first few actions about (Xiaohei, 2026-10-30:
+                // the stand network's first 0.7 s moved the leg targets 5.7° a tick and pitched
+                // the trunk at 62 °/s RMS, against 2° and 20 °/s once it had settled).
+                if leg_blend.is_none() {
+                    leg_blend = Some((hold, 0.0));
+                }
             }
         }
         if was_driving && !driving {
@@ -2664,7 +2701,8 @@ async fn control_loop<T: RobotIo>(
                                 );
                             }
                             // After a rest the legs come back from where they lie, not in
-                            // one jump to where the sitting network wants them.
+                            // one jump to where the sitting network wants them; and a policy
+                            // taking over afresh comes in from the pose that was held.
                             if let Some((from, elapsed)) = leg_blend.as_mut() {
                                 let k = (*elapsed / REST_LEG_BLEND_S).min(1.0);
                                 // the head too, which may have rested as well

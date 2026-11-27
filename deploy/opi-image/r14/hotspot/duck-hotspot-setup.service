@@ -1,0 +1,15 @@
+[Unit]
+Description=DuckBuddy phone Wi-Fi setup hotspot
+Wants=NetworkManager.service
+After=NetworkManager.service duck-firstboot.service
+
+[Service]
+Group=orangepi
+RuntimeDirectory=duck-hotspot
+RuntimeDirectoryMode=0750
+ExecStart=/usr/bin/python3 /usr/local/lib/duck-hotspot-setup.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
